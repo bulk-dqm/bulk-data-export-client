@@ -1,0 +1,46 @@
+{
+  "name": "bulk-data-export-client",
+  "version": "0.0.1",
+  "description": "CLI application for FHIR Bulk Data Export and FHIR-based quality measure calculation",
+  "main": "build/index.js",
+  "files": [
+    "build/*"
+  ],
+  "scripts": {
+    "lint": "tsc && eslint \"**/*.{js,ts}\"",
+    "lint:fix": "tsc --noEmit && eslint \"**/*.{js,ts}\" --quiet --fix",
+    "prettier": "prettier --check \"**/*.{js,ts}\"",
+    "prettier:fix": "prettier --write \"**/*.{js,ts}\"",
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@gitlab.mitre.org:bulk-dqm/bulk-data-export-client.git"
+  },
+  "contributors": [
+    {
+      "name": "Sarah McDougall",
+      "email": "smcdougall@mitre.org"
+    },
+    {
+      "name": "Reece Adamson",
+      "email": "radamson@mitre.org"
+    },
+    {
+      "name": "Sam Sayer",
+      "email": "ssayer@mitre.org"
+    }
+  ],
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@types/jest": "^29.1.2",
+    "@typescript-eslint/eslint-plugin": "^5.40.0",
+    "@typescript-eslint/parser": "^5.40.0",
+    "eslint": "^8.25.0",
+    "eslint-config-prettier": "^8.5.0",
+    "jest": "^29.2.0",
+    "prettier": "^2.7.1",
+    "ts-jest": "^29.0.3",
+    "typescript": "^4.8.4"
+  }
+}
