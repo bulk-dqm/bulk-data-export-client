@@ -6,7 +6,8 @@ CLI application for FHIR Bulk Data Export and FHIR-based quality measure calcula
 
   - [Prerequisites](#prerequisites)
   - [Local Installation](#local-installation)
-
+  - [Local Usage](#local-usage)
+- [CLI Options](#cli-options)
 - [License](#license)
 
 ## Installation
@@ -28,7 +29,29 @@ Install dependencies:
 ```bash
 npm install
 ```
+### Local Usage
+Run the CLI with ts-node:
 
+```bash
+npm run cli -- [options]
+```
+
+Or using the built JavaScript:
+
+```bash
+npm run build
+node build/cli.js [options]
+```
+
+## CLI Options
+The supported options for making a request to a FHIR server are as follows:
+
+```bash
+-f, --fhir-url <FHIR URL>       FHIR server base URL.
+-g, --group-id <id>             FHIR Group ID used to query FHIR server for resources.
+-d, --destination <destination> Download destination of exported files.
+-p, --parallel-downloads <number> Number of downloads to run in parallel.
+```
 ## License
 
 Copyright 2022 The MITRE Corporation
