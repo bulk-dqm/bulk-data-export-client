@@ -31,7 +31,7 @@ const main = async () => {
 
   const options = {
     ...program.opts(),
-    requests
+    requests,
   } as Types.NormalizedOptions;
   const client = new BulkDataClient(options as Types.NormalizedOptions);
   CLIReporter(client);
