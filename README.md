@@ -21,7 +21,7 @@ CLI application for FHIR Bulk Data Export and FHIR-based quality measure calcula
 Clone the source code:
 
 ```bash
-git clone git@gitlab.mitre.org:bulk-dqm/bulk-data-export-client.git
+git clone git@github.com:bulk-dqm/bulk-data-export-client.git
 ```
 
 Install dependencies:
