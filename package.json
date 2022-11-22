@@ -52,7 +52,9 @@
   },
   "dependencies": {
     "bulk-data-client": "git+https://git@github.com/smart-on-fhir/bulk-data-client",
+    "colors": "^1.4.0",
     "commander": "^9.4.1",
+    "prompt-sync": "^4.2.0",
     "ts-node": "^10.9.1",
     "ts-node-dev": "^2.0.0"
   }

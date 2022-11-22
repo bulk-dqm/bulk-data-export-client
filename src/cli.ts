@@ -2,7 +2,9 @@
 
 import { Command } from 'commander';
 import { resolve } from 'path';
+import prompt from 'prompt-sync';
 import fs from 'fs';
+import 'colors';
 import { BulkDataClient as Types } from 'bulk-data-client';
 import BulkDataClient from 'bulk-data-client/built/lib/BulkDataClient';
 import CLIReporter from 'bulk-data-client/built/reporters/cli';
@@ -43,7 +45,14 @@ const main = async () => {
   } as Types.NormalizedOptions;
 
   if (!fs.existsSync(program.opts().destination)) {
-    fs.mkdirSync(program.opts().destination, { recursive: true });
+    console.log( `Destination ${program.opts().destination} does not exist.`);
+    const makeDir = prompt()('Make new directory? [y/n] '.cyan);
+    if (makeDir.toLowerCase() === 'y') {
+      fs.mkdirSync(program.opts().destination, { recursive: true });
+    } else {
+      console.error('Exiting due to non-existent destination.'.red);
+      process.exit();
+    }
   }
 
   const client = new BulkDataClient(options as Types.NormalizedOptions);
