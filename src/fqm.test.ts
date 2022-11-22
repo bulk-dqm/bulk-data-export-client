@@ -72,3 +72,20 @@ describe('calculateMeasureReports', () => {
     }
   });
 });
+
+test('evaluateCMS122ForPatient works with default arguments', async () => {
+  const denom = await loadPatientBundle('tests-denom-CMS122-Patient-bundle.json');
+  const results = await evaluateCMS122ForPatient(denom);
+  let mr;
+  if (Array.isArray(results.results)) {
+    expect(results.results.length).toBe(1);
+    mr = results.results[0];
+  } else {
+    mr = results.results;
+  }
+  expect(mr.group).not.toBeUndefined();
+  if (mr.group != undefined) {
+    expect(mr.group.length).toBe(1);
+    expect(mr.group[0]?.measureScore?.value).toBe(0);
+  }
+});
