@@ -13,7 +13,7 @@ test('loadCMS122 works', async () => {
 })
 
 test('evaluateCMS122ForPatient against denom', async () => {
-  const denom = await loadPatientBundle('tests-denom-CMS122-bundle.json');
+  const denom = await loadPatientBundle('tests-denom-CMS122-Patient-bundle.json');
   const results = await evaluateCMS122ForPatient(denom,
                                                  { 'measurementPeriodStart': '2019-01-01T00:00:00-07:00',
                                                     'measurementPeriodEnd': '2019-12-31T00:00:00-07:00'}
@@ -26,7 +26,6 @@ test('evaluateCMS122ForPatient against denom', async () => {
     mr = results.results
   }
   expect(mr.group).not.toBeUndefined()
-  // console.log(JSON.stringify(mr))
   if (mr.group != undefined) {
     expect(mr.group.length).toBe(1);
     expect(mr.group[0]?.measureScore?.value).toBe(1);
