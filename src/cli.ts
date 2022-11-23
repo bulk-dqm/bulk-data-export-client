@@ -45,7 +45,7 @@ const main = async () => {
   } as Types.NormalizedOptions;
 
   if (!fs.existsSync(program.opts().destination)) {
-    console.log( `Destination ${program.opts().destination} does not exist.`);
+    console.log(`Destination ${program.opts().destination} does not exist.`);
     const makeDir = prompt()('Make new directory? [y/n] '.cyan);
     if (makeDir.toLowerCase() === 'y') {
       fs.mkdirSync(program.opts().destination, { recursive: true });
