@@ -1,7 +1,6 @@
 import { readFile } from 'fs/promises';
-import { Calculator } from 'fqm-execution';
+import { Calculator, CalculatorTypes } from 'fqm-execution';
 import * as path from 'path';
-import { CalculationOptions } from 'fqm-execution/build/types/Calculator';
 
 export const loadMeasureFromFile = async (filename: string): Promise<fhir4.Bundle> => {
   const data = await readFile(path.join(__dirname, 'measures', filename), 'utf8');
