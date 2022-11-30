@@ -11,7 +11,10 @@ export const loadCMS122 = async (): Promise<fhir4.Bundle> => {
   return loadMeasureFromFile('DiabetesHemoglobinA1cHbA1cPoorControl9FHIR-bundle.json');
 };
 
-export const evaluateCMS122ForPatient = async (patientBundle: fhir4.Bundle[], options: CalculatorTypes.CalculationOptions = {}) => {
+export const evaluateCMS122ForPatient = async (
+  patientBundle: fhir4.Bundle[],
+  options: CalculatorTypes.CalculationOptions = {}
+) => {
   const measureBundle = await loadCMS122();
   return await Calculator.calculateMeasureReports(measureBundle, patientBundle, options);
 };
