@@ -13,6 +13,7 @@ import * as Logger from 'bulk-data-client/built/loggers/index';
 import { DownloadComplete, KickOffEnd, ExportError, DownloadStart, DownloadError } from './logTypes';
 import { createExportReport } from './reportGenerator';
 
+import { getNDJSONFromDir } from './ndjsonToBundle';
 const program = new Command();
 
 // specify options for bulk data request and retrieval
@@ -188,6 +189,7 @@ const main = async () => {
   await client.downloadAllFiles(manifest);
 
   await createExportReport(destination, logFile);
+  getNDJSONFromDir(program.opts().destination, 'Patient');
 };
 
 main();
