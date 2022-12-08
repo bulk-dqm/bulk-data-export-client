@@ -189,7 +189,10 @@ const main = async () => {
   await client.downloadAllFiles(manifest);
 
   await createExportReport(destination, logFile);
-  getNDJSONFromDir(program.opts().destination, 'Patient');
+  const parsedNDJSON = getNDJSONFromDir(program.opts().destination, 'Patient');
+  console.log(parsedNDJSON);
+  // assume one group
+  console.log(getNDJSONFromDir(program.opts().destination, 'Group')[0]);
 };
 
 main();
