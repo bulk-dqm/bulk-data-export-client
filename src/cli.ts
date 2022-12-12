@@ -12,8 +12,7 @@ import { resolveJWK } from './jwk';
 import * as Logger from 'bulk-data-client/built/loggers/index';
 import { DownloadComplete, KickOffEnd, ExportError, DownloadStart, DownloadError } from './logTypes';
 import { createExportReport } from './reportGenerator';
-
-import { getNDJSONFromDir } from './ndjsonToBundle';
+import { assemblePatientBundle, getNDJSONFromDir } from './ndjsonToBundle';
 const program = new Command();
 
 // specify options for bulk data request and retrieval
@@ -190,9 +189,10 @@ const main = async () => {
 
   await createExportReport(destination, logFile);
   const parsedNDJSON = getNDJSONFromDir(program.opts().destination, 'Patient');
-  console.log(parsedNDJSON);
-  // assume one group
-  console.log(getNDJSONFromDir(program.opts().destination, 'Group')[0]);
+  const results = parsedNDJSON.map((patient) => {
+    return assemblePatientBundle(patient, program.opts().destination);
+  });
+  console.log(results);
 };
 
 main();
