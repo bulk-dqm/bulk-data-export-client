@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export class CollectionBundle implements fhir4.Bundle {
   resourceType: 'Bundle';
   entry: fhir4.BundleEntry[];

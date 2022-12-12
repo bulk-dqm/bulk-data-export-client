@@ -4,7 +4,7 @@ import { Command } from 'commander';
 import { BulkDataClient as Types } from 'bulk-data-client';
 import BulkDataClient from 'bulk-data-client/built/lib/BulkDataClient';
 import CLIReporter from 'bulk-data-client/built/reporters/cli';
-import { getNDJSONFromDir } from './ndjsonToBundle';
+import { assemblePatientBundle, getNDJSONFromDir } from './ndjsonToBundle';
 const program = new Command();
 
 // specify options for bulk data request and retrieval
@@ -40,9 +40,10 @@ const main = async () => {
   const manifest = await client.waitForExport(statusEndpoint);
   await client.downloadAllFiles(manifest);
   const parsedNDJSON = getNDJSONFromDir(program.opts().destination, 'Patient');
-  console.log(parsedNDJSON);
-  // assume one group
-  console.log(getNDJSONFromDir(program.opts().destination, 'Group')[0]);
+  const results = parsedNDJSON.map((patient) => {
+    return assemblePatientBundle(patient, program.opts().destination);
+  });
+  console.log(results);
 };
 
 main();

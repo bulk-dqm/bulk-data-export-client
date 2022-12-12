@@ -3,9 +3,9 @@ import path from 'path';
 import { getSearchParameters } from '@projecttacoma/node-fhir-server-core';
 
 const compartmentDefPath = path.resolve(
-  path.join(__dirname, '../compartment-definition/compartmentdefinition-patient.json')
+  path.join(__dirname, '../src/compartment-definition/compartmentdefinition-patient.json')
 );
-const attrOutputPath = path.resolve(path.join(__dirname, '../compartment-definition/patient-attribute-paths.json'));
+const outputPath = path.resolve(path.join(__dirname, '../src/compartment-definition/patient-attribute-paths.json'));
 const jsonStr = fs.readFileSync(compartmentDefPath, 'utf8');
 
 /**
@@ -17,14 +17,14 @@ const parse = async (compartmentJson) => {
   const compartmentDefinition = await JSON.parse(compartmentJson);
   const attrResults = {};
 
-  compartmentDefinition.resource.forEach(resourceObj => {
+  compartmentDefinition.resource.forEach((resourceObj) => {
     if (resourceObj.param) {
       attrResults[resourceObj.code] = [];
       // gets the search parameters for a given resource on a specific version
-      const searchParameterList = getSearchParameters(resourceObj.code, '4_0_0').filter(objs =>
+      const searchParameterList = getSearchParameters(resourceObj.code, '4_0_0').filter((objs) =>
         resourceObj.param?.includes(objs.name)
       );
-      searchParameterList.forEach(obj => {
+      searchParameterList.forEach((obj) => {
         // retrieve xpath and remove resource type from beginning
         attrResults[resourceObj.code].push(obj.xpath.substr(obj.xpath.indexOf('.') + 1));
       });
@@ -34,10 +34,10 @@ const parse = async (compartmentJson) => {
 };
 
 parse(jsonStr)
-  .then(attrResults => {
-    fs.writeFileSync(attrOutputPath, JSON.stringify(attrResults, null, 2), 'utf8');
-    console.log(`Wrote file to ${attrOutputPath}`);
+  .then((attrResults) => {
+    fs.writeFileSync(outputPath, JSON.stringify(attrResults, null, 2), 'utf8');
+    console.log(`Wrote file to ${outputPath}`);
   })
-  .catch(e => {
+  .catch((e) => {
     console.error(e);
   });
