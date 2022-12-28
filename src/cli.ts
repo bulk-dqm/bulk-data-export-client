@@ -48,7 +48,7 @@ const main = async () => {
     console.log(`Destination ${program.opts().destination} does not exist.`);
     const rl = readline.createInterface({
       input: process.stdin,
-      output: process.stdout
+      output: process.stdout,
     });
     const answer = await rl.question('Make new directory? [y/n]');
     if (answer.toLowerCase() === 'y') {
