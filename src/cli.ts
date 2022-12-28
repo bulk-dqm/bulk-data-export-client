@@ -2,7 +2,7 @@
 
 import { Command } from 'commander';
 import { resolve } from 'path';
-import prompt from 'prompt-sync';
+import * as readline from 'readline/promises';
 import fs from 'fs';
 import 'colors';
 import { BulkDataClient as Types } from 'bulk-data-client';
@@ -46,13 +46,18 @@ const main = async () => {
 
   if (!fs.existsSync(program.opts().destination)) {
     console.log(`Destination ${program.opts().destination} does not exist.`);
-    const makeDir = prompt()('Make new directory? [y/n] '.cyan);
-    if (makeDir.toLowerCase() === 'y') {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+    const answer = await rl.question('Make new directory? [y/n]');
+    if (answer.toLowerCase() === 'y') {
       fs.mkdirSync(program.opts().destination, { recursive: true });
     } else {
       console.error('Exiting due to non-existent destination.'.red);
       process.exit();
     }
+    rl.close();
   }
 
   const client = new BulkDataClient(options as Types.NormalizedOptions);
