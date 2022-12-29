@@ -13,6 +13,9 @@ import * as Logger from 'bulk-data-client/built/loggers/index';
 import { DownloadComplete, KickOffEnd, ExportError, DownloadStart, DownloadError } from './logTypes';
 import { createExportReport } from './reportGenerator';
 import { assemblePatientBundle, getNDJSONFromDir } from './ndjsonToBundle';
+import { evaluateCMS122ForPatient } from './fqm';
+import { CalculatorTypes } from 'fqm-execution';
+
 const program = new Command();
 
 // specify options for bulk data request and retrieval
@@ -33,6 +36,7 @@ program
     'Path to a log file to write logs to. Defaults to log.ndjson (in the download destination directory) if not specified',
     'log.ndjson'
   )
+  .option('-o, --output-path <path>', 'Output path for FHIR MeasureReports. Defaults to output.json.', 'output.json')
   .parseAsync(process.argv);
 
 // add required trailing slash to FHIR URL if not present
@@ -189,10 +193,18 @@ const main = async () => {
 
   await createExportReport(destination, logFile);
   const parsedNDJSON = getNDJSONFromDir(program.opts().destination, 'Patient');
-  const results = parsedNDJSON.map((patient) => {
+  const patientBundles = parsedNDJSON.map((patient) => {
     return assemblePatientBundle(patient, program.opts().destination);
   });
-  console.log(results);
+  const calculationOptions: CalculatorTypes.CalculationOptions = {
+    measurementPeriodStart: '2019-01-01',
+    measurementPeriodEnd: '2019-12-31',
+  };
+  const result = await evaluateCMS122ForPatient(patientBundles, calculationOptions);
+  fs.writeFile(program.opts().outputPath, JSON.stringify(result?.results, null, 2), (err) => {
+    if (err) throw err;
+  });
+  console.log(`Output written to ${program.opts().outputPath}`);
 };
 
 main();
