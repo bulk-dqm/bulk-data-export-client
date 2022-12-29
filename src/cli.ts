@@ -17,7 +17,11 @@ program
   .requiredOption('-g, --group <id>', 'FHIR Group ID used to query FHIR server for resources')
   .option('-d, --destination <destination>', 'Download destination. Defaults to ./downloads', './downloads')
   .option('-p, --parallel-downloads <number>', 'Number of downloads to run in parallel. Defaults to 1.', '1')
-  .option('-o, --output-path <path>', 'Output path for FHIR MeasureReports. Defaults to output.json.', 'output.json')
+  .option(
+    '-o, --output-path <path>',
+    'Output path for FHIR MeasureReports produced from measure evaluation. Defaults to output.json.',
+    'output.json'
+  )
   .parseAsync(process.argv);
 
 // add required trailing slash to FHIR URL if not present
@@ -46,8 +50,9 @@ const main = async () => {
   await client.downloadAllFiles(manifest);
   const parsedNDJSON = getNDJSONFromDir(program.opts().destination, 'Patient');
   const patientBundles = parsedNDJSON.map((patient) => {
-    return assemblePatientBundle(patient, program.opts().destination);
+    return assemblePatientBundle(patient as fhir4.Patient, program.opts().destination);
   });
+  // TODO: remove specified measurement period start/end after CLI options are implemented for them
   const calculationOptions: CalculatorTypes.CalculationOptions = {
     measurementPeriodStart: '2019-01-01',
     measurementPeriodEnd: '2019-12-31',
