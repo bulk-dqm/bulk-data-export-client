@@ -5,6 +5,10 @@ import { BulkDataClient as Types } from 'bulk-data-client';
 import BulkDataClient from 'bulk-data-client/built/lib/BulkDataClient';
 import CLIReporter from 'bulk-data-client/built/reporters/cli';
 import { assemblePatientBundle, getNDJSONFromDir } from './ndjsonToBundle';
+import { evaluateCMS122ForPatient } from './fqm';
+import fs from 'fs';
+import { CalculatorTypes } from 'fqm-execution';
+
 const program = new Command();
 
 // specify options for bulk data request and retrieval
@@ -13,6 +17,7 @@ program
   .requiredOption('-g, --group <id>', 'FHIR Group ID used to query FHIR server for resources')
   .option('-d, --destination <destination>', 'Download destination. Defaults to ./downloads', './downloads')
   .option('-p, --parallel-downloads <number>', 'Number of downloads to run in parallel. Defaults to 1.', '1')
+  .option('-o, --output-path <path>', 'Output path for FHIR MeasureReports. Defaults to output.json.', 'output.json')
   .parseAsync(process.argv);
 
 // add required trailing slash to FHIR URL if not present
@@ -40,10 +45,18 @@ const main = async () => {
   const manifest = await client.waitForExport(statusEndpoint);
   await client.downloadAllFiles(manifest);
   const parsedNDJSON = getNDJSONFromDir(program.opts().destination, 'Patient');
-  const results = parsedNDJSON.map((patient) => {
+  const patientBundles = parsedNDJSON.map((patient) => {
     return assemblePatientBundle(patient, program.opts().destination);
   });
-  console.log(results);
+  const calculationOptions: CalculatorTypes.CalculationOptions = {
+    measurementPeriodStart: '2019-01-01',
+    measurementPeriodEnd: '2019-12-31',
+  };
+  const result = await evaluateCMS122ForPatient(patientBundles, calculationOptions);
+  fs.writeFile(program.opts().outputPath, JSON.stringify(result?.results, null, 2), (err) => {
+    if (err) throw err;
+  });
+  console.log(`Output written to ${program.opts().outputPath}`);
 };
 
 main();
