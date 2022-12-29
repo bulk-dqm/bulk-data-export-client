@@ -9,8 +9,15 @@ import * as patientRefs from './compartment-definition/patient-attribute-paths.j
  * @param resourceType resource type to retrieve NDJSON for
  */
 export const getNDJSONFromDir = (dir: string, resourceType: string): fhir4.FhirResource[] => {
-  const ndjsonFile = path.join(dir, `${resourceType}.ndjson`);
-  if (fs.existsSync(ndjsonFile)) {
+  // ndjson file can take on <resourceType>.ndjson or 1.<resourceType>.ndjson format
+  if (
+    fs.existsSync(path.join(dir, `${resourceType}.ndjson`)) ||
+    fs.existsSync(path.join(dir, `1.${resourceType}.ndjson`))
+  ) {
+    let ndjsonFile;
+    if (fs.existsSync(path.join(dir, `${resourceType}.ndjson`))) {
+      ndjsonFile = path.join(dir, `${resourceType}.ndjson`);
+    } else ndjsonFile = path.join(dir, `1.${resourceType}.ndjson`);
     const ndjson = fs.readFileSync(ndjsonFile, 'utf8').split('\n');
     const parsedNDJSON = ndjson.map((resource) => {
       return JSON.parse(resource) as fhir4.FhirResource;
@@ -47,8 +54,8 @@ export const assemblePatientBundle = (patientResource: fhir4.Patient, dir: strin
 
   const files = fs.readdirSync(dir);
   files.forEach((file) => {
-    // get resource type from the file name, assuming <resourceType>.ndjson format
-    const resourceType = file.slice(0, -7);
+    // get resource type from the file name (assumes <resourceType>.ndjson or 1.<resourceType>.ndjson format)
+    const resourceType = file[0] === '1' ? file.slice(2, -7) : file.slice(0, -7);
     const resources = getNDJSONFromDir(dir, resourceType);
     // get all resources from the file that reference the patient
     const filteredResources = (resources as any[]).filter((res) => {
