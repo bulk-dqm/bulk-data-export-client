@@ -49,8 +49,9 @@ The supported options for making a request to a FHIR server are as follows:
 ```bash
 -f, --fhir-url <FHIR URL>       FHIR server base URL.
 -g, --group-id <id>             FHIR Group ID used to query FHIR server for resources.
--d, --destination <destination> Download destination of exported files.
+-d, --destination <destination> Download destination of exported files. Defaults to ./downloads.
 -p, --parallel-downloads <number> Number of downloads to run in parallel.
+-o, --output-path <path> Output path for FHIR MeasureReports produced from measure evaluation. Defaults to output.json
 ```
 ## License
 

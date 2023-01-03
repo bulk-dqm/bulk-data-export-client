@@ -1,6 +1,12 @@
 {
-  "exclude": ["build", "node_modules"],
-  "include": ["src"],
+  "exclude": [
+    "build",
+    "node_modules",
+    "src/**/*.test.ts",
+    "src/**/*.test.js",
+    "scripts"
+  ],
+  "include": ["src", "src/measures/*.json"],
   "compilerOptions": {
     "resolveJsonModule": true,
     "target": "ES2021",
