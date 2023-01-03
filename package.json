@@ -41,6 +41,7 @@
     "@types/fhir": "^0.0.35",
     "@types/jest": "^29.1.2",
     "@types/jsonwebtoken": "^8.5.9",
+    "@types/node": "^18.11.18",
     "@types/node-jose": "^1.1.10",
     "@typescript-eslint/eslint-plugin": "^5.40.0",
     "@typescript-eslint/parser": "^5.40.0",

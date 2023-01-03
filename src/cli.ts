@@ -14,6 +14,7 @@ import { DownloadComplete, KickOffEnd, ExportError, DownloadStart, DownloadError
 import { createExportReport } from './reportGenerator';
 import { assemblePatientBundle, getNDJSONFromDir } from './ndjsonToBundle';
 import { evaluateCMS122ForPatient } from './fqm';
+import { writeFile } from 'fs';
 import { CalculatorTypes } from 'fqm-execution';
 
 const program = new Command();
@@ -201,7 +202,7 @@ const main = async () => {
     measurementPeriodEnd: '2019-12-31',
   };
   const result = await evaluateCMS122ForPatient(patientBundles, calculationOptions);
-  fs.writeFile(program.opts().outputPath, JSON.stringify(result?.results, null, 2), (err) => {
+  writeFile(program.opts().outputPath, JSON.stringify(result?.results, null, 2), (err) => {
     if (err) throw err;
   });
   console.log(`Output written to ${program.opts().outputPath}`);
