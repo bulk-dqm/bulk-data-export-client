@@ -47,10 +47,12 @@ node build/cli.js [options]
 The supported options for making a request to a FHIR server are as follows:
 
 ```bash
--f, --fhir-url <FHIR URL>       FHIR server base URL.
--g, --group-id <id>             FHIR Group ID used to query FHIR server for resources.
--d, --destination <destination> Download destination of exported files.
--p, --parallel-downloads <number> Number of downloads to run in parallel.
+-f, --fhir-url <FHIR URL>          FHIR server base URL.
+-g, --group-id <id>                FHIR Group ID used to query FHIR server for resources.
+-d, --destination <destination>    Download destination of exported files.
+-p, --parallel-downloads <number>  Number of downloads to run in parallel.
+-l, --log-items [file-path]        Path to a log file (if logging is desired). Defaults to log.ndjson if no log file provided.
+                                   Otherwise defaults to false.
 ```
 ## License
 

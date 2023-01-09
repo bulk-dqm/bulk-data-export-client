@@ -9,6 +9,7 @@ import { BulkDataClient as Types } from 'bulk-data-client';
 import BulkDataClient from 'bulk-data-client/built/lib/BulkDataClient';
 import CLIReporter from 'bulk-data-client/built/reporters/cli';
 import * as Logger from 'bulk-data-client/built/loggers/index';
+import { DownloadComplete, KickOffEnd } from './logTypes';
 
 const program = new Command();
 
@@ -22,9 +23,10 @@ program
     `${process.cwd()}/downloads`
   )
   .option('-p, --parallel-downloads <number>', 'Number of downloads to run in parallel. Defaults to 1.', '1')
+  // may be used as a boolean option but may optionally take an option-argument as the log file
   .option(
     '-l, --log-items [file-path]',
-    'Path to a log file (if logging is desired). Defaults to log.ndjson and is stored in the download destination directory (if logging enabled), false otherwise'
+    'Path to a log file (if logging is desired). Defaults to log.ndjson (in the download destination directory) if no log file is provided. Otherwise defaults to false.'
   )
   .parseAsync(process.argv);
 
@@ -78,7 +80,7 @@ const main = async () => {
     const logger = Logger.createLogger({ enabled: true, file: logFile } as Types.LoggingOptions);
     const startTime = Date.now();
 
-    client.on('kickOffEnd', ({ requestParameters, capabilityStatement, response }: any) => {
+    client.on('kickOffEnd', ({ requestParameters, capabilityStatement, response }: KickOffEnd) => {
       logger.log('info', {
         eventId: 'kickoff',
         eventDetail: {
@@ -94,7 +96,11 @@ const main = async () => {
       });
     });
 
-    client.on('allDownloadsComplete', (downloads: any[]) => {
+    client.on('downloadComplete', (eventDetail: DownloadComplete) => {
+      logger.log('info', { eventId: 'download_complete', eventDetail });
+    });
+
+    client.on('allDownloadsComplete', (downloads: Types.FileDownload[]) => {
       const eventDetail = {
         files: 0,
         resources: 0,
@@ -111,10 +117,6 @@ const main = async () => {
       });
 
       logger.log('info', { eventId: 'export_complete', eventDetail });
-    });
-
-    client.on('downloadComplete', (eventDetail: any) => {
-      logger.log('info', { eventId: 'download_complete', eventDetail });
     });
   }
 
