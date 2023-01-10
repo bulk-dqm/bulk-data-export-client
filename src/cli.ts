@@ -11,6 +11,7 @@ import CLIReporter from 'bulk-data-client/built/reporters/cli';
 import { resolveJWK } from './jwk';
 import * as Logger from 'bulk-data-client/built/loggers/index';
 import { DownloadComplete, KickOffEnd } from './logTypes';
+import { createExportReport } from './reportGenerator';
 
 const program = new Command();
 
@@ -98,8 +99,8 @@ const main = async () => {
   const client = new BulkDataClient(options as Types.NormalizedOptions);
   CLIReporter(client);
 
+  let logFile;
   if (program.opts().logItems) {
-    let logFile;
     program.opts().logItems === true
       ? (logFile = `${destination}/log.ndjson`)
       : (logFile = `${destination}/${program.opts().logItems}`);
@@ -149,6 +150,8 @@ const main = async () => {
   const statusEndpoint = await client.kickOff();
   const manifest = await client.waitForExport(statusEndpoint);
   await client.downloadAllFiles(manifest);
+
+  if (logFile) createExportReport(logFile);
 };
 
 main();
