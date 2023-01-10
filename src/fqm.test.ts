@@ -1,6 +1,4 @@
 import { calculateMeasureReports, loadBundleFromFile, CalculatorTypes } from './fqm';
-import { readFile } from 'fs/promises';
-import * as path from 'path';
 
 describe('loadBundleFromFile', () => {
   describe('given a Measure file that exists', () => {
@@ -11,7 +9,7 @@ describe('loadBundleFromFile', () => {
       if (bundle.entry) {
         expect(bundle.entry[0]?.resource?.resourceType).toBe('Measure');
       }
-    })
+    });
   });
 });
 
@@ -31,7 +29,7 @@ describe('calculateMeasureReports', () => {
   });
 
   test('returns the expected number of reports', async () => {
-    expect(Array.isArray(measureReports.results)).toBeTruthy()
+    expect(Array.isArray(measureReports.results)).toBeTruthy();
     if (Array.isArray(measureReports.results)) {
       expect(measureReports.results.length).toBe(3);
     }
