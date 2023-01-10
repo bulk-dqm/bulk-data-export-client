@@ -15,4 +15,4 @@ export const calculateMeasureReports = async (
   return await Calculator.calculateMeasureReports(measureBundle, patientBundle, options);
 };
 
-export {CalculatorTypes} from 'fqm-execution';
+export { CalculatorTypes } from 'fqm-execution';
