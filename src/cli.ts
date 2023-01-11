@@ -8,6 +8,7 @@ import 'colors';
 import { BulkDataClient as Types } from 'bulk-data-client';
 import BulkDataClient from 'bulk-data-client/built/lib/BulkDataClient';
 import CLIReporter from 'bulk-data-client/built/reporters/cli';
+import { resolveJWK } from './jwk';
 const program = new Command();
 
 // specify options for bulk data request and retrieval
@@ -20,6 +21,9 @@ program
     `${process.cwd()}/downloads`
   )
   .option('-p, --parallel-downloads <number>', 'Number of downloads to run in parallel. Defaults to 1.', '1')
+  .option('--token-url <tokenUrl>', 'Bulk Token Authorization Endpoint')
+  .option('--client-id <clientId>', 'Bulk Data Client ID')
+  .option('--private-key <url>', 'File or URL of private key used to sign authentication tokens')
   .parseAsync(process.argv);
 
 // add required trailing slash to FHIR URL if not present
@@ -39,8 +43,13 @@ const main = async () => {
     },
   };
 
+  if (program.opts().privateKey) {
+    program.opts().privateKey = await resolveJWK(program.opts().privateKey);
+  }
+
   const options = {
     ...program.opts(),
+    inlineDocRefAttachmentTypes: [],
     requests,
   } as Types.NormalizedOptions;
 
