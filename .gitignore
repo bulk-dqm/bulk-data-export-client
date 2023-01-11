@@ -1,3 +1,6 @@
 build
 node_modules
 downloads
+coverage
+
+.DS_Store

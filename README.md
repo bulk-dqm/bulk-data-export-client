@@ -13,7 +13,7 @@ CLI application for FHIR Bulk Data Export and FHIR-based quality measure calcula
 ## Installation
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/en/)
+- [Node.js Version 17](https://nodejs.org/en/)
 - [Git](https://git-scm.com/)
 
 ### Local Installation
