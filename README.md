@@ -51,6 +51,9 @@ The supported options for making a request to a FHIR server are as follows:
 -g, --group-id <id>             FHIR Group ID used to query FHIR server for resources.
 -d, --destination <destination> Download destination of exported files.
 -p, --parallel-downloads <number> Number of downloads to run in parallel.
+--token-url <tokenUrl> Bulk Token Authorization Endpoint
+--client-id <clientId> Bulk Data Client ID
+--private-key <url> File containing private key used to sign authentication tokens
 ```
 ## License
 
