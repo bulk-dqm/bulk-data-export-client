@@ -23,7 +23,7 @@ program
   .option('-p, --parallel-downloads <number>', 'Number of downloads to run in parallel. Defaults to 1.', '1')
   .option('--token-url <tokenUrl>', 'Bulk Token Authorization Endpoint')
   .option('--client-id <clientId>', 'Bulk Data Client ID')
-  .option('--private-key <url>', 'File or URL of private key used to sign authentication tokens')
+  .option('--private-key <url>', 'File containing private key used to sign authentication tokens')
   .parseAsync(process.argv);
 
 // add required trailing slash to FHIR URL if not present
