@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { Command } from 'commander';
+import { Command, OptionValues } from 'commander';
 import { resolve } from 'path';
 import * as readline from 'readline/promises';
 import fs from 'fs';
@@ -8,6 +8,7 @@ import 'colors';
 import { BulkDataClient as Types } from 'bulk-data-client';
 import BulkDataClient from 'bulk-data-client/built/lib/BulkDataClient';
 import CLIReporter from 'bulk-data-client/built/reporters/cli';
+import { resolveJWK } from './jwk';
 const program = new Command();
 
 // specify options for bulk data request and retrieval
@@ -20,12 +21,30 @@ program
     `${process.cwd()}/downloads`
   )
   .option('-p, --parallel-downloads <number>', 'Number of downloads to run in parallel. Defaults to 1.', '1')
+  .option('--token-url <tokenUrl>', 'Bulk Token Authorization Endpoint')
+  .option('--client-id <clientId>', 'Bulk Data Client ID')
+  .option('--private-key <url>', 'File containing private key used to sign authentication tokens')
   .parseAsync(process.argv);
 
 // add required trailing slash to FHIR URL if not present
 program.opts().fhirUrl = program.opts().fhirUrl.replace(/\/*$/, '/');
 // get absolute path for specified destination directory
 program.opts().destination = resolve(program.opts().destination);
+
+const validateInputs = (opts: OptionValues) => {
+  if (opts.tokenUrl || opts.cliendId || opts.privateKey) {
+    const missingInputs = [];
+    if (!opts.tokenUrl) missingInputs.push('Token URL');
+    if (!opts.clientId) missingInputs.push('Client ID');
+    if (!opts.privateKey) missingInputs.push('Private Key');
+
+    if (missingInputs.length > 0) {
+      throw new Error(
+        `Token URL, Client ID, and Private Key must all be provided or all omitted. Missing ${missingInputs.join(', ')}`
+      );
+    }
+  }
+};
 
 const main = async () => {
   const requests = {
@@ -39,8 +58,15 @@ const main = async () => {
     },
   };
 
+  validateInputs(program.opts());
+
+  if (program.opts().privateKey) {
+    program.opts().privateKey = await resolveJWK(program.opts().privateKey);
+  }
+
   const options = {
     ...program.opts(),
+    inlineDocRefAttachmentTypes: [],
     requests,
   } as Types.NormalizedOptions;
 
