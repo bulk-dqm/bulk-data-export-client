@@ -4,3 +4,4 @@ downloads
 coverage
 
 .DS_Store
+*.html
