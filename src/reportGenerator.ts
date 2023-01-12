@@ -20,19 +20,31 @@ export const createExportReport = async (file: string) => {
   const exportCompleteResults = exportEvents.filter((log) => log.eventId === 'export_complete')[0];
   const downloadResults = exportEvents.filter((log) => log.eventId === 'download_complete');
 
-  let htmlContent = `<div><h1>Export Results for Export ${exportId}</h1>`;
-
-  htmlContent += `\n<p>Export Timestamp: ${kickoffResults.timestamp}</p>`;
-  htmlContent += `\n<p>Export URL: ${kickoffResults.eventDetail.exportUrl}</p>`;
-  htmlContent += '\n<h2>Completed Export Information</h2>';
-  htmlContent += `\n<p>Downloads Complete Timestamp: ${exportCompleteResults.timestamp}</p>`;
-  htmlContent += `\n<p>Event Details:<ul><li>Files: ${exportCompleteResults.eventDetail.files}</li><li>Resources: ${exportCompleteResults.eventDetail.resources}</li><li>Duration: ${exportCompleteResults.eventDetail.duration} seconds</li></ul></p>`;
-  htmlContent += '\n<h2>Created Files:</h2><ul>';
-  downloadResults.forEach(
-    (event) => (htmlContent += `\n<li>${event.eventDetail.fileUrl} (${event.eventDetail.resourceCount} resources)</li>`)
-  );
-  htmlContent += '</ul>';
-  htmlContent += '</div>';
+  const htmlContent = `
+    <div>
+      <h1>Export Results for Export ${exportId}</h1>
+      <p>Export Timestamp: ${kickoffResults.timestamp}</p>
+      <p>Export URL: ${kickoffResults.eventDetail.exportUrl}</p>
+      <h2>Completed Export Information</h2>
+      <p>Downloads Complete Timestamp: ${exportCompleteResults.timestamp}</p>
+      <p>Event Details:
+      <ul>
+        <li>Files: ${exportCompleteResults.eventDetail.files}</li>
+        <li>Resources: ${exportCompleteResults.eventDetail.resources}</li>
+        <li>Duration: ${exportCompleteResults.eventDetail.duration} seconds</li>
+      </ul>
+      </p>
+      <h2>Created Files:</h2>
+      <ul>
+        ${downloadResults
+          .map(
+            (event) => `<li>${event.eventDetail.fileUrl} (${event.eventDetail.resourceCount} resources)</li>
+        `
+          )
+          .join('')}
+      </ul>
+    </div>
+  `;
 
   writeFile(`export-report-${exportId}.html`, htmlContent);
 };
