@@ -13,9 +13,9 @@ import * as Logger from 'bulk-data-client/built/loggers/index';
 import { DownloadComplete, KickOffEnd, ExportError, DownloadStart, DownloadError } from './logTypes';
 import { createExportReport } from './reportGenerator';
 import { assemblePatientBundle, getNDJSONFromDir } from './ndjsonToBundle';
-import { evaluateCMS122ForPatient } from './fqm';
 import { writeFile } from 'fs';
 import { CalculatorTypes } from 'fqm-execution';
+import { calculateMeasureReports, loadBundleFromFile } from './fqm';
 
 const program = new Command();
 
@@ -23,6 +23,7 @@ const program = new Command();
 program
   .requiredOption('-f, --fhir-url <url>', 'Base URL of FHIR server used for data retrieval')
   .requiredOption('-g, --group <id>', 'FHIR Group ID used to query FHIR server for resources')
+  .requiredOption('-m, --measure-bundle <measure-bundle>', 'Path to measure bundle.')
   .option(
     '-d, --destination <destination>',
     'Download destination relative to current working directory. Defaults to ./downloads',
@@ -201,7 +202,8 @@ const main = async () => {
     measurementPeriodStart: '2019-01-01',
     measurementPeriodEnd: '2019-12-31',
   };
-  const result = await evaluateCMS122ForPatient(patientBundles, calculationOptions);
+  const measureBundle = await loadBundleFromFile(program.opts().measureBundle);
+  const result = await calculateMeasureReports(measureBundle, patientBundles, calculationOptions);
   writeFile(program.opts().outputPath, JSON.stringify(result?.results, null, 2), (err) => {
     if (err) throw err;
   });
