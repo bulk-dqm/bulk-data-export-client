@@ -47,8 +47,8 @@ program.opts().fhirUrl = program.opts().fhirUrl.replace(/\/*$/, '/');
 const destination = resolve(program.opts().destination);
 
 const validateInputs = (opts: OptionValues) => {
-  if (opts.tokenUrl || opts.clientId || opts.privateKey) {
-    const missingInputs = [];
+  if (opts.tokenUrl || opts.cliendId || opts.privateKey) {
+    const missingInputs: string[] = [];
     if (!opts.tokenUrl) missingInputs.push('Token URL');
     if (!opts.clientId) missingInputs.push('Client ID');
     if (!opts.privateKey) missingInputs.push('Private Key');
@@ -196,7 +196,7 @@ const main = async () => {
   await createExportReport(destination, logFile);
   const parsedNDJSON = getNDJSONFromDir(program.opts().destination, 'Patient');
   const patientBundles = parsedNDJSON.map((patient) => {
-    return assemblePatientBundle(patient, program.opts().destination);
+    return assemblePatientBundle(patient as fhir4.Patient, program.opts().destination);
   });
   const calculationOptions: CalculatorTypes.CalculationOptions = {
     measurementPeriodStart: '2019-01-01',
