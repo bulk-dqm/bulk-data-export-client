@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { Command } from 'commander';
+import { Command, OptionValues } from 'commander';
 import { resolve } from 'path';
 import * as readline from 'readline/promises';
 import fs from 'fs';
@@ -31,6 +31,21 @@ program.opts().fhirUrl = program.opts().fhirUrl.replace(/\/*$/, '/');
 // get absolute path for specified destination directory
 program.opts().destination = resolve(program.opts().destination);
 
+const validateInputs = (opts: OptionValues) => {
+  if (opts.tokenUrl || opts.cliendId || opts.privateKey) {
+    const missingInputs = [];
+    if (!opts.tokenUrl) missingInputs.push('Token URL');
+    if (!opts.clientId) missingInputs.push('Client ID');
+    if (!opts.privateKey) missingInputs.push('Private Key');
+
+    if (missingInputs.length > 0) {
+      throw new Error(
+        `Token URL, Client ID, and Private Key must all be provided or all omitted. Missing ${missingInputs.join(', ')}`
+      );
+    }
+  }
+};
+
 const main = async () => {
   const requests = {
     https: {
@@ -42,6 +57,8 @@ const main = async () => {
       // pass custom headers
     },
   };
+
+  validateInputs(program.opts());
 
   if (program.opts().privateKey) {
     program.opts().privateKey = await resolveJWK(program.opts().privateKey);
