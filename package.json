@@ -51,7 +51,7 @@
     "typescript": "^4.8.4"
   },
   "dependencies": {
-    "bulk-data-client": "git+https://git@github.com/bulk-dqm/bulk-data-client#fix-download",
+    "bulk-data-client": "git+https://git@github.com/smart-on-fhir/bulk-data-client",
     "colors": "^1.4.0",
     "commander": "^9.4.1",
     "fqm-execution": "^1.0.1",
