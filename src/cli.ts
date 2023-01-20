@@ -28,10 +28,9 @@ program
   .option('--token-url <tokenUrl>', 'Bulk Token Authorization Endpoint')
   .option('--client-id <clientId>', 'Bulk Data Client ID')
   .option('--private-key <url>', 'File containing private key used to sign authentication tokens')
-  // may be used as a boolean option but may optionally take an option-argument as the log file
   .option(
-    '-l, --log-items [file-path]',
-    'Path to a log file (if logging is desired). Defaults to log.ndjson (in the download destination directory) if no log file is provided. Otherwise defaults to false.'
+    '-l, --log-file <file-path>',
+    'Path to a log file to write logs to. Defaults to log.ndjson (in the download destination directory) if not specified', 'log.ndjson'
   )
   .parseAsync(process.argv);
 
@@ -41,7 +40,7 @@ program.opts().fhirUrl = program.opts().fhirUrl.replace(/\/*$/, '/');
 const destination = resolve(program.opts().destination);
 
 const validateInputs = (opts: OptionValues) => {
-  if (opts.tokenUrl || opts.cliendId || opts.privateKey) {
+  if (opts.tokenUrl || opts.clientId || opts.privateKey) {
     const missingInputs = [];
     if (!opts.tokenUrl) missingInputs.push('Token URL');
     if (!opts.clientId) missingInputs.push('Client ID');
@@ -99,59 +98,54 @@ const main = async () => {
   const client = new BulkDataClient(options as Types.NormalizedOptions);
   CLIReporter(client);
 
-  let logFile;
-  if (program.opts().logItems) {
-    program.opts().logItems === true
-      ? (logFile = `${destination}/log.ndjson`)
-      : (logFile = `${destination}/${program.opts().logItems}`);
-    const logger = Logger.createLogger({ enabled: true, file: logFile } as Types.LoggingOptions);
-    const startTime = Date.now();
+  const logFile = `${destination}/${program.opts().logFile}`;
+  const logger = Logger.createLogger({ enabled: true, file: logFile } as Types.LoggingOptions);
+  const startTime = Date.now();
 
-    client.on('kickOffEnd', ({ requestParameters, capabilityStatement, response }: KickOffEnd) => {
-      logger.log('info', {
-        eventId: 'kickoff',
-        eventDetail: {
-          exportUrl: response.requestUrl,
-          errorCode: response.statusCode >= 400 ? response.statusCode : null,
-          errorBody: response.statusCode >= 400 ? response.body : null,
-          softwareName: capabilityStatement.software?.name || null,
-          softwareVersion: capabilityStatement.software?.version || null,
-          softwareReleaseDate: capabilityStatement.software?.releaseDate || null,
-          fhirVersion: capabilityStatement.fhirVersion || null,
-          requestParameters,
-        },
-      });
+  client.on('kickOffEnd', ({ requestParameters, capabilityStatement, response }: KickOffEnd) => {
+    logger.log('info', {
+      eventId: 'kickoff',
+      eventDetail: {
+        exportUrl: response.requestUrl,
+        errorCode: response.statusCode >= 400 ? response.statusCode : null,
+        errorBody: response.statusCode >= 400 ? response.body : null,
+        softwareName: capabilityStatement.software?.name || null,
+        softwareVersion: capabilityStatement.software?.version || null,
+        softwareReleaseDate: capabilityStatement.software?.releaseDate || null,
+        fhirVersion: capabilityStatement.fhirVersion || null,
+        requestParameters,
+      },
+    });
+  });
+
+  client.on('downloadComplete', (eventDetail: DownloadComplete) => {
+    logger.log('info', { eventId: 'download_complete', eventDetail });
+  });
+
+  client.on('allDownloadsComplete', (downloads: Types.FileDownload[]) => {
+    const eventDetail = {
+      files: 0,
+      resources: 0,
+      bytes: 0,
+      attachments: 0,
+      duration: Date.now() - startTime,
+    };
+
+    downloads.forEach((d) => {
+      eventDetail.files += 1;
+      eventDetail.resources += d.resources;
+      eventDetail.bytes += d.uncompressedBytes;
+      eventDetail.attachments += d.attachments;
     });
 
-    client.on('downloadComplete', (eventDetail: DownloadComplete) => {
-      logger.log('info', { eventId: 'download_complete', eventDetail });
-    });
-
-    client.on('allDownloadsComplete', (downloads: Types.FileDownload[]) => {
-      const eventDetail = {
-        files: 0,
-        resources: 0,
-        bytes: 0,
-        attachments: 0,
-        duration: Date.now() - startTime,
-      };
-
-      downloads.forEach((d) => {
-        eventDetail.files += 1;
-        eventDetail.resources += d.resources;
-        eventDetail.bytes += d.uncompressedBytes;
-        eventDetail.attachments += d.attachments;
-      });
-
-      logger.log('info', { eventId: 'export_complete', eventDetail });
-    });
-  }
+    logger.log('info', { eventId: 'export_complete', eventDetail });
+  });
 
   const statusEndpoint = await client.kickOff();
   const manifest = await client.waitForExport(statusEndpoint);
   await client.downloadAllFiles(manifest);
 
-  if (logFile) await createExportReport(logFile);
+  await createExportReport(logFile);
 };
 
 main();
