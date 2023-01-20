@@ -10,7 +10,7 @@ import BulkDataClient from 'bulk-data-client/built/lib/BulkDataClient';
 import CLIReporter from 'bulk-data-client/built/reporters/cli';
 import { resolveJWK } from './jwk';
 import * as Logger from 'bulk-data-client/built/loggers/index';
-import { DownloadComplete, KickOffEnd } from './logTypes';
+import { DownloadComplete, KickOffEnd, ExportError, DownloadStart, DownloadError } from './logTypes';
 import { createExportReport } from './reportGenerator';
 
 const program = new Command();
@@ -30,7 +30,8 @@ program
   .option('--private-key <url>', 'File containing private key used to sign authentication tokens')
   .option(
     '-l, --log-file <file-path>',
-    'Path to a log file to write logs to. Defaults to log.ndjson (in the download destination directory) if not specified', 'log.ndjson'
+    'Path to a log file to write logs to. Defaults to log.ndjson (in the download destination directory) if not specified',
+    'log.ndjson'
   )
   .parseAsync(process.argv);
 
@@ -116,6 +117,47 @@ const main = async () => {
         requestParameters,
       },
     });
+  });
+
+  client.on('exportProgress', (e: Types.ExportStatus) => {
+    if (!e.virtual) {
+      // skip the artificially triggered 100% event
+      logger.log('info', {
+        eventId: 'status_progress',
+        eventDetail: {
+          body: e.body,
+          xProgress: e.xProgressHeader,
+          retryAfter: e.retryAfterHeader,
+        },
+      });
+    }
+  });
+
+  client.on('exportError', (eventDetail: ExportError) => {
+    logger.log('error', {
+      eventId: 'status_error',
+      eventDetail,
+    });
+  });
+
+  client.on('exportComplete', (manifest: Types.ExportManifest) => {
+    logger.log('info', {
+      eventId: 'status_complete',
+      eventDetail: {
+        transactionTime: manifest.transactionTime,
+        outputFileCount: manifest.output.length,
+        deletedFileCount: manifest.deleted?.length || 0,
+        errorFileCount: manifest.error.length,
+      },
+    });
+  });
+
+  client.on('downloadStart', (eventDetail: DownloadStart) => {
+    logger.log('info', { eventId: 'download_request', eventDetail });
+  });
+
+  client.on('downloadError', (eventDetail: DownloadError) => {
+    logger.log('info', { eventId: 'download_error', eventDetail });
   });
 
   client.on('downloadComplete', (eventDetail: DownloadComplete) => {
