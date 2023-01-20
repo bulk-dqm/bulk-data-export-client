@@ -145,7 +145,7 @@ const main = async () => {
   const manifest = await client.waitForExport(statusEndpoint);
   await client.downloadAllFiles(manifest);
 
-  await createExportReport(logFile);
+  await createExportReport(destination, logFile);
 };
 
 main();

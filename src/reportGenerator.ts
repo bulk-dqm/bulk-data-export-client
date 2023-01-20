@@ -2,9 +2,10 @@ import { readFile, writeFile } from 'fs/promises';
 
 /**
  * Generates html export report from data collected throughout bulk export operation
+ * @param downloadDir download directory from CLI options
  * @param file ndjson log file containing bulk export results
  */
-export const createExportReport = async (file: string) => {
+export const createExportReport = async (downloadDir: string, file: string) => {
   const data = await readFile(file, 'utf8');
   const jsonLogs = data
     .split('\n')
@@ -46,5 +47,5 @@ export const createExportReport = async (file: string) => {
     </div>
   `;
 
-  writeFile(`export-report-${exportId}.html`, htmlContent);
+  writeFile(`${downloadDir}/export-report-${exportId}.html`, htmlContent);
 };
