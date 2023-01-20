@@ -54,6 +54,7 @@ The supported options for making a request to a FHIR server are as follows:
 --token-url <tokenUrl> Bulk Token Authorization Endpoint
 --client-id <clientId> Bulk Data Client ID
 --private-key <url> File containing private key used to sign authentication tokens
+-l, --log-file <file-path> Path to a log file to write logs to. Defaults to log.ndjson.
 ```
 ## License
 
