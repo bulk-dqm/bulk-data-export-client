@@ -8,6 +8,7 @@ import 'colors';
 import { BulkDataClient as Types } from 'bulk-data-client';
 import BulkDataClient from 'bulk-data-client/built/lib/BulkDataClient';
 import CLIReporter from 'bulk-data-client/built/reporters/cli';
+import TextReporter from 'bulk-data-client/built/reporters/text';
 import { resolveJWK } from './jwk';
 import * as Logger from 'bulk-data-client/built/loggers/index';
 import { DownloadComplete, KickOffEnd, ExportError, DownloadStart, DownloadError } from './logTypes';
@@ -29,7 +30,7 @@ program
     'Download destination relative to current working directory. Defaults to ./downloads',
     `${process.cwd()}/downloads`
   )
-  .option('-p, --parallel-downloads <number>', 'Number of downloads to run in parallel. Defaults to 1.', '1')
+  .option('-p, --parallel-downloads <number>', 'Number of downloads to run in parallel. Defaults to 5.')
   .option('--token-url <tokenUrl>', 'Bulk Token Authorization Endpoint')
   .option('--client-id <clientId>', 'Bulk Data Client ID')
   .option('--private-key <url>', 'File containing private key used to sign authentication tokens')
@@ -39,6 +40,8 @@ program
     'log.ndjson'
   )
   .option('-o, --output-path <path>', 'Output path for FHIR MeasureReports. Defaults to output.json.', 'output.json')
+  .option('--reporter [cli|text]', 'Reporter to use to render the output. "cli" renders fancy progress bars and tables. "text" is better for log files. Defaults to "cli".')
+  .option('--lenient', 'Sets a "Prefer: handling=lenient" request header to tell the server to ignore unsupported parameters.')
   .parseAsync(process.argv);
 
 // add required trailing slash to FHIR URL if not present
@@ -62,16 +65,6 @@ const validateInputs = (opts: OptionValues) => {
 };
 
 const main = async () => {
-  const requests = {
-    https: {
-      // reject self-signed certs
-      rejectUnauthorized: true,
-    },
-    timeout: 30000,
-    headers: {
-      // pass custom headers
-    },
-  };
 
   validateInputs(program.opts());
 
@@ -81,9 +74,7 @@ const main = async () => {
 
   const options = {
     ...program.opts(),
-    inlineDocRefAttachmentTypes: [],
     destination,
-    requests,
   } as Types.NormalizedOptions;
 
   if (!fs.existsSync(destination)) {
@@ -103,6 +94,7 @@ const main = async () => {
   }
 
   const client = new BulkDataClient(options as Types.NormalizedOptions);
+  // TODO: update this to be text reporter instead when specified
   CLIReporter(client);
 
   const logFile = `${destination}/${program.opts().logFile}`;

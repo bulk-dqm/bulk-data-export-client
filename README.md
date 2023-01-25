@@ -57,6 +57,8 @@ The supported options for making a request to a FHIR server are as follows:
 --private-key <url> File containing private key used to sign authentication tokens
 -l, --log-file <file-path> Path to a log file to write logs to. Defaults to log.ndjson.
 -o, --output-path <path> Output path for FHIR MeasureReports produced from measure evaluation. Defaults to output.json
+--reporter [cli|text] Reporter to use to render the output. "cli" renders fancy progress bars and tables. "text" is better for log files. Defaults to "cli".
+--lenient Sets a "Prefer: handling=lenient" request header to tell the server to ignore unsupported parameters.
 ```
 ## License
 
