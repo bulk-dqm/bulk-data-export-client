@@ -52,7 +52,7 @@ export const assemblePatientBundle = (patientResource: fhir4.Patient, dir: strin
   const patientId = patientResource.id;
   const bundleResources: fhir4.FhirResource[] = [];
 
-  const files = fs.readdirSync(dir).filter(f => f !== 'log.ndjson' && f.slice(-7) === '.ndjson');
+  const files = fs.readdirSync(dir).filter((f) => f !== 'log.ndjson' && f.slice(-7) === '.ndjson');
   files.forEach((file) => {
     // get resource type from the file name (assumes <resourceType>.ndjson or 1.<resourceType>.ndjson format)
     const resourceType = file[0] === '1' ? file.slice(2, -7) : file.slice(0, -7);
