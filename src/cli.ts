@@ -12,6 +12,10 @@ import { resolveJWK } from './jwk';
 import * as Logger from 'bulk-data-client/built/loggers/index';
 import { DownloadComplete, KickOffEnd, ExportError, DownloadStart, DownloadError } from './logTypes';
 import { createExportReport } from './reportGenerator';
+import { assemblePatientBundle, getNDJSONFromDir } from './ndjsonToBundle';
+import { writeFile } from 'fs';
+import { CalculatorTypes } from 'fqm-execution';
+import { calculateMeasureReports, loadBundleFromFile } from './fqm';
 
 const program = new Command();
 
@@ -19,6 +23,7 @@ const program = new Command();
 program
   .requiredOption('-f, --fhir-url <url>', 'Base URL of FHIR server used for data retrieval')
   .requiredOption('-g, --group <id>', 'FHIR Group ID used to query FHIR server for resources')
+  .requiredOption('-m, --measure-bundle <measure-bundle>', 'Path to measure bundle.')
   .option(
     '-d, --destination <destination>',
     'Download destination relative to current working directory. Defaults to ./downloads',
@@ -33,6 +38,7 @@ program
     'Path to a log file to write logs to. Defaults to log.ndjson (in the download destination directory) if not specified',
     'log.ndjson'
   )
+  .option('-o, --output-path <path>', 'Output path for FHIR MeasureReports. Defaults to output.json.', 'output.json')
   .parseAsync(process.argv);
 
 // add required trailing slash to FHIR URL if not present
@@ -41,8 +47,8 @@ program.opts().fhirUrl = program.opts().fhirUrl.replace(/\/*$/, '/');
 const destination = resolve(program.opts().destination);
 
 const validateInputs = (opts: OptionValues) => {
-  if (opts.tokenUrl || opts.clientId || opts.privateKey) {
-    const missingInputs = [];
+  if (opts.tokenUrl || opts.cliendId || opts.privateKey) {
+    const missingInputs: string[] = [];
     if (!opts.tokenUrl) missingInputs.push('Token URL');
     if (!opts.clientId) missingInputs.push('Client ID');
     if (!opts.privateKey) missingInputs.push('Private Key');
@@ -147,7 +153,7 @@ const main = async () => {
         transactionTime: manifest.transactionTime,
         outputFileCount: manifest.output.length,
         deletedFileCount: manifest.deleted?.length || 0,
-        errorFileCount: manifest.error.length,
+        errorFileCount: manifest.error?.length || 0,
       },
     });
   });
@@ -188,6 +194,20 @@ const main = async () => {
   await client.downloadAllFiles(manifest);
 
   await createExportReport(destination, logFile);
+  const parsedNDJSON = getNDJSONFromDir(program.opts().destination, 'Patient');
+  const patientBundles = parsedNDJSON.map((patient) => {
+    return assemblePatientBundle(patient as fhir4.Patient, program.opts().destination);
+  });
+  const calculationOptions: CalculatorTypes.CalculationOptions = {
+    measurementPeriodStart: '2019-01-01',
+    measurementPeriodEnd: '2019-12-31',
+  };
+  const measureBundle = await loadBundleFromFile(program.opts().measureBundle);
+  const result = await calculateMeasureReports(measureBundle, patientBundles, calculationOptions);
+  writeFile(program.opts().outputPath, JSON.stringify(result?.results, null, 2), (err) => {
+    if (err) throw err;
+  });
+  console.log(`Output written to ${program.opts().outputPath}`);
 };
 
 main();

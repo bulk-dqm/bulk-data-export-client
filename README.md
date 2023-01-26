@@ -49,12 +49,14 @@ The supported options for making a request to a FHIR server are as follows:
 ```bash
 -f, --fhir-url <FHIR URL>       FHIR server base URL.
 -g, --group-id <id>             FHIR Group ID used to query FHIR server for resources.
--d, --destination <destination> Download destination of exported files.
+-m, --measure-bundle <measure-bundle> Path to measure bundle.
+-d, --destination <destination> Download destination of exported files. Defaults to ./downloads.
 -p, --parallel-downloads <number> Number of downloads to run in parallel.
 --token-url <tokenUrl> Bulk Token Authorization Endpoint
 --client-id <clientId> Bulk Data Client ID
 --private-key <url> File containing private key used to sign authentication tokens
 -l, --log-file <file-path> Path to a log file to write logs to. Defaults to log.ndjson.
+-o, --output-path <path> Output path for FHIR MeasureReports produced from measure evaluation. Defaults to output.json
 ```
 ## License
 

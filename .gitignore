@@ -2,6 +2,7 @@ build
 node_modules
 downloads
 coverage
+testDir
 
 .DS_Store
 *.html
