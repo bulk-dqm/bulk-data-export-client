@@ -6,7 +6,7 @@
  * OVERRIDE THE PROPERTIES YOU NEED TO CHANGE. Then use the `--config` parameter
  * in CLI to load your configuration file.
  *
- * @type {import("..").BulkDataClient.ConfigFileOptions}
+ * @type {import("../../build/cli").BulkDataClient.ConfigFileOptions}
  */
 module.exports = {
   /**
@@ -248,16 +248,4 @@ module.exports = {
    * Only needed if `destination` points to S3
    */
   awsSecretAccessKey: '',
-
-  log: {
-    enabled: true,
-
-    /**
-     * Key/value pairs to be added to every log entry. Can be used to add
-     * useful information, for example which site imported this data.
-     */
-    metadata: {
-      // siteId: "localhost"
-    },
-  },
 };

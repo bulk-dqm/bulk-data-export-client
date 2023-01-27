@@ -17,13 +17,14 @@ import { assemblePatientBundle, getNDJSONFromDir } from './ndjsonToBundle';
 import { writeFile } from 'fs';
 import { CalculatorTypes } from 'fqm-execution';
 import { calculateMeasureReports, loadBundleFromFile } from './fqm';
+import defaultOptions from './config/defaults';
 
 const program = new Command();
 
 // specify options for bulk data request and retrieval
 program
-  .requiredOption('-f, --fhir-url <url>', 'Base URL of FHIR server used for data retrieval')
-  .requiredOption('-g, --group <id>', 'FHIR Group ID used to query FHIR server for resources')
+  .option('-f, --fhir-url <url>', 'Base URL of FHIR server used for data retrieval')
+  .option('-g, --group <id>', 'FHIR Group ID used to query FHIR server for resources')
   .requiredOption('-m, --measure-bundle <measure-bundle>', 'Path to measure bundle.')
   .option(
     '-d, --destination <destination>',
@@ -40,14 +41,44 @@ program
     'log.ndjson'
   )
   .option('-o, --output-path <path>', 'Output path for FHIR MeasureReports. Defaults to output.json.', 'output.json')
-  .option('--reporter [cli|text]', 'Reporter to use to render the output. "cli" renders fancy progress bars and tables. "text" is better for log files. Defaults to "cli".')
-  .option('--lenient', 'Sets a "Prefer: handling=lenient" request header to tell the server to ignore unsupported parameters.')
+  .option(
+    '--reporter [cli|text]',
+    'Reporter to use to render the output. "cli" renders fancy progress bars and tables. "text" is better for log files. Defaults to "cli".'
+  )
+  .option(
+    '--lenient',
+    'Sets a "Prefer: handling=lenient" request header to tell the server to ignore unsupported parameters.'
+  )
+  .option('--config <path>', 'Relative path to a config file. Otherwise uses default options.')
   .parseAsync(process.argv);
 
+const { config, ...params } = program.opts();
+const base: Types.NormalizedOptions = defaultOptions;
+const options: any = { ...base };
+
+// TODO: check for presence of fhirurl and group
+Object.assign(options, params);
+if (config) {
+  const configPath = resolve(__dirname, 'config', config);
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const cfg = require(configPath);
+  Object.assign(options, cfg);
+}
+
+if (!options.fhirUrl) {
+  console.log('A fhirUrl is required as configuration option, or specified via the CLI');
+  program.help();
+}
+
+if (!options.group) {
+  console.log('A group is required as configuration option, or specified via the CLI');
+  program.help();
+}
+
 // add required trailing slash to FHIR URL if not present
-program.opts().fhirUrl = program.opts().fhirUrl.replace(/\/*$/, '/');
+options.fhirUrl = options.fhirUrl.replace(/\/*$/, '/');
 // get absolute path for specified destination directory
-const destination = resolve(program.opts().destination);
+const destination = resolve(options.destination);
 
 const validateInputs = (opts: OptionValues) => {
   if (opts.tokenUrl || opts.cliendId || opts.privateKey) {
@@ -64,18 +95,12 @@ const validateInputs = (opts: OptionValues) => {
   }
 };
 
-const main = async () => {
-
+const main = async (options: Types.NormalizedOptions) => {
   validateInputs(program.opts());
 
   if (program.opts().privateKey) {
     program.opts().privateKey = await resolveJWK(program.opts().privateKey);
   }
-
-  const options = {
-    ...program.opts(),
-    destination,
-  } as Types.NormalizedOptions;
 
   if (!fs.existsSync(destination)) {
     console.log(`Destination ${destination} does not exist.`);
@@ -93,9 +118,10 @@ const main = async () => {
     rl.close();
   }
 
-  const client = new BulkDataClient(options as Types.NormalizedOptions);
-  // TODO: update this to be text reporter instead when specified
-  CLIReporter(client);
+  const client = new BulkDataClient({ ...options, destination } as Types.NormalizedOptions);
+  if (program.opts().report === 'text') {
+    TextReporter(client);
+  } else CLIReporter(client);
 
   const logFile = `${destination}/${program.opts().logFile}`;
   const logger = Logger.createLogger({ enabled: true, file: logFile } as Types.LoggingOptions);
@@ -202,4 +228,4 @@ const main = async () => {
   console.log(`Output written to ${program.opts().outputPath}`);
 };
 
-main();
+main(options);
