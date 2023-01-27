@@ -17,6 +17,7 @@ import { assemblePatientBundle, getNDJSONFromDir } from './ndjsonToBundle';
 import { writeFile } from 'fs';
 import { CalculatorTypes } from 'fqm-execution';
 import { calculateMeasureReports, loadBundleFromFile } from './fqm';
+import defaultOptions from './config/defaults';
 
 interface NormalizedOptions extends Omit<Types.NormalizedOptions, 'privateKey'> {
   logFile: string;
