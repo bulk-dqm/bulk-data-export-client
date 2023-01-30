@@ -11,7 +11,7 @@ import CLIReporter from 'bulk-data-client/built/reporters/cli';
 import TextReporter from 'bulk-data-client/built/reporters/text';
 import { resolveJWK } from './jwk';
 import * as Logger from 'bulk-data-client/built/loggers/index';
-import { DownloadComplete, KickOffEnd, ExportError, DownloadStart, DownloadError } from './logTypes';
+import { DownloadComplete, KickOffEnd, ExportError, DownloadStart, DownloadError } from './types/logTypes';
 import { createExportReport } from './reportGenerator';
 import { assemblePatientBundle, getNDJSONFromDir } from './ndjsonToBundle';
 import { writeFile } from 'fs';
@@ -19,13 +19,20 @@ import { CalculatorTypes } from 'fqm-execution';
 import { calculateMeasureReports, loadBundleFromFile } from './fqm';
 import defaultOptions from './config/defaults';
 
+interface NormalizedOptions extends Omit<Types.NormalizedOptions, 'privateKey'> {
+  logFile: string;
+  outputPath: string;
+  measureBundle: string;
+  privateKey: any;
+}
+
 const program = new Command();
 
 // specify options for bulk data request and retrieval
 program
   .option('-f, --fhir-url <url>', 'Base URL of FHIR server used for data retrieval')
   .option('-g, --group <id>', 'FHIR Group ID used to query FHIR server for resources')
-  .requiredOption('-m, --measure-bundle <measure-bundle>', 'Path to measure bundle.')
+  .option('-m, --measure-bundle <measure-bundle>', 'Path to measure bundle.')
   .option(
     '-d, --destination <destination>',
     'Download destination relative to current working directory. Defaults to ./downloads',
@@ -52,27 +59,32 @@ program
   .option('--config <path>', 'Relative path to a config file. Otherwise uses default options.')
   .parseAsync(process.argv);
 
+// use default options for parameters not set by the CLI
 const { config, ...params } = program.opts();
-const base: Types.NormalizedOptions = defaultOptions;
-const options: any = { ...base };
+const base: NormalizedOptions = defaultOptions;
+const options: NormalizedOptions = { ...base };
 
-// TODO: check for presence of fhirurl and group
-Object.assign(options, params);
 if (config) {
+  // use custom config file to populate parameter values
   const configPath = resolve(__dirname, 'config', config);
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const cfg = require(configPath);
   Object.assign(options, cfg);
 }
+// assign parameter values set by the CLI
+Object.assign(options, params);
 
-if (!options.fhirUrl) {
-  console.log('A fhirUrl is required as configuration option, or specified via the CLI');
-  program.help();
-}
+if (!options.fhirUrl || !options.group || !options.measureBundle) {
+  const missingInputs: string[] = [];
+  if (!options.fhirUrl) missingInputs.push('fhirUrl');
+  if (!options.group) missingInputs.push('group');
+  if (!options.measureBundle) missingInputs.push('measureBundle');
 
-if (!options.group) {
-  console.log('A group is required as configuration option, or specified via the CLI');
-  program.help();
+  if (missingInputs.length > 0) {
+    throw new Error(
+      `The following inputs are required configuration options that are missing: ${missingInputs.join(', ')}. `
+    );
+  }
 }
 
 // add required trailing slash to FHIR URL if not present
@@ -81,7 +93,7 @@ options.fhirUrl = options.fhirUrl.replace(/\/*$/, '/');
 const destination = resolve(options.destination);
 
 const validateInputs = (opts: OptionValues) => {
-  if (opts.tokenUrl || opts.cliendId || opts.privateKey) {
+  if (opts.tokenUrl || opts.clientId || opts.privateKey) {
     const missingInputs: string[] = [];
     if (!opts.tokenUrl) missingInputs.push('Token URL');
     if (!opts.clientId) missingInputs.push('Client ID');
@@ -95,11 +107,11 @@ const validateInputs = (opts: OptionValues) => {
   }
 };
 
-const main = async (options: Types.NormalizedOptions) => {
+const main = async (options: NormalizedOptions) => {
   validateInputs(program.opts());
 
-  if (program.opts().privateKey) {
-    program.opts().privateKey = await resolveJWK(program.opts().privateKey);
+  if (options.privateKey) {
+    program.opts().privateKey = await resolveJWK(options.privateKey);
   }
 
   if (!fs.existsSync(destination)) {
@@ -118,12 +130,12 @@ const main = async (options: Types.NormalizedOptions) => {
     rl.close();
   }
 
-  const client = new BulkDataClient({ ...options, destination } as Types.NormalizedOptions);
-  if (program.opts().report === 'text') {
+  const client = new BulkDataClient({ ...options, destination } as NormalizedOptions);
+  if (options.reporter === 'text') {
     TextReporter(client);
   } else CLIReporter(client);
 
-  const logFile = `${destination}/${program.opts().logFile}`;
+  const logFile = `${destination}/${options.logFile}`;
   const logger = Logger.createLogger({ enabled: true, file: logFile } as Types.LoggingOptions);
   const startTime = Date.now();
 
@@ -212,20 +224,20 @@ const main = async (options: Types.NormalizedOptions) => {
   await client.downloadAllFiles(manifest);
 
   await createExportReport(destination, logFile);
-  const parsedNDJSON = getNDJSONFromDir(program.opts().destination, 'Patient');
+  const parsedNDJSON = getNDJSONFromDir(options.destination, 'Patient');
   const patientBundles = parsedNDJSON.map((patient) => {
-    return assemblePatientBundle(patient as fhir4.Patient, program.opts().destination);
+    return assemblePatientBundle(patient as fhir4.Patient, options.destination);
   });
   const calculationOptions: CalculatorTypes.CalculationOptions = {
     measurementPeriodStart: '2019-01-01',
     measurementPeriodEnd: '2019-12-31',
   };
-  const measureBundle = await loadBundleFromFile(program.opts().measureBundle);
+  const measureBundle = await loadBundleFromFile(options.measureBundle);
   const result = await calculateMeasureReports(measureBundle, patientBundles, calculationOptions);
-  writeFile(program.opts().outputPath, JSON.stringify(result?.results, null, 2), (err) => {
+  writeFile(options.outputPath, JSON.stringify(result?.results, null, 2), (err) => {
     if (err) throw err;
   });
-  console.log(`Output written to ${program.opts().outputPath}`);
+  console.log(`Output written to ${options.outputPath}`);
 };
 
 main(options);

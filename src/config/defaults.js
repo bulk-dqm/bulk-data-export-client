@@ -13,7 +13,13 @@ module.exports = {
    * FHIR server base URL. Can be overridden by the `-f` or `--fhir-url`
    * CLI parameter.
    */
-  fhirUrl: '',
+  fhirUrl: null,
+
+  /**
+   * Path to a FHIR measure bundle. Can be overriden by the `-m` or `--measure-bundle`
+   * CLI parameter.
+   */
+  measureBundle: null,
 
   /**
    * The Bulk Data server token URL ("none" for open servers)
@@ -21,10 +27,10 @@ module.exports = {
   tokenUrl: 'none',
 
   /**
-   * The private key (JWK) used to sign authentication tokens. This is not
+   * The private key used to sign authentication tokens. This is not
    * needed for open servers
    */
-  privateKey: {},
+  privateKey: '',
 
   /**
    * This is not needed for open servers
@@ -104,7 +110,7 @@ module.exports = {
    *
    * Can be overridden from terminal parameter `-g` or `--group`
    */
-  group: '',
+  group: null,
 
   /**
    * If true, adds `handling=lenient` to the `prefer` request header. This may
@@ -248,4 +254,17 @@ module.exports = {
    * Only needed if `destination` points to S3
    */
   awsSecretAccessKey: '',
+
+  /**
+   * Path to a log file to write logs to. Configurable
+   * via the CLI with the `-l` or `--log-file` flag
+   */
+  logFile: 'log.ndjson',
+
+  /**
+   * Path to an output file for generated FHIR MeasureReports.
+   * Defaults to output.json. Configurable via the CLI with the
+   * `-o` or `--output-path` flag
+   */
+  outputPath: 'output.json',
 };
