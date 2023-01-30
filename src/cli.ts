@@ -17,7 +17,6 @@ import { assemblePatientBundle, getNDJSONFromDir } from './ndjsonToBundle';
 import { writeFile } from 'fs';
 import { CalculatorTypes } from 'fqm-execution';
 import { calculateMeasureReports, loadBundleFromFile } from './fqm';
-import defaultOptions from './config/defaults';
 
 interface NormalizedOptions extends Omit<Types.NormalizedOptions, 'privateKey'> {
   logFile: string;
@@ -61,7 +60,8 @@ program
 
 // use default options for parameters not set by the CLI
 const { config, ...params } = program.opts();
-const base: NormalizedOptions = defaultOptions;
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const base: NormalizedOptions = require('../config/defaults');
 const options: NormalizedOptions = { ...base };
 
 if (config) {
