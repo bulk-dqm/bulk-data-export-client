@@ -7,5 +7,5 @@ testDir
 .DS_Store
 *.html
 
-src/config/*
-!src/config/defaults.js
+config/*
+!config/defaults.js
