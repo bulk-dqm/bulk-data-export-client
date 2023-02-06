@@ -11,12 +11,12 @@ import CLIReporter from 'bulk-data-client/built/reporters/cli';
 import TextReporter from 'bulk-data-client/built/reporters/text';
 import { resolveJWK } from './jwk';
 import * as Logger from 'bulk-data-client/built/loggers/index';
-import { DownloadComplete, KickOffEnd, ExportError, DownloadStart, DownloadError } from './types/logTypes';
 import { createExportReport } from './reportGenerator';
 import { assemblePatientBundle, getNDJSONFromDir } from './ndjsonToBundle';
 import { writeFile } from 'fs';
 import { CalculatorTypes } from 'fqm-execution';
 import { calculateMeasureReports, loadBundleFromFile } from './fqm';
+import { setLoggingEvents } from './logEvents';
 
 interface NormalizedOptions extends Omit<Types.NormalizedOptions, 'privateKey'> {
   logFile: string;
@@ -74,21 +74,10 @@ if (config) {
 // assign parameter values set by the CLI
 Object.assign(options, params);
 
-if (!options.fhirUrl || !options.group || !options.measureBundle) {
-  const missingInputs: string[] = [];
-  if (!options.fhirUrl) missingInputs.push('fhirUrl');
-  if (!options.group) missingInputs.push('group');
-  if (!options.measureBundle) missingInputs.push('measureBundle');
-
-  if (missingInputs.length > 0) {
-    throw new Error(
-      `The following inputs are required configuration options that are missing: ${missingInputs.join(', ')}. `
-    );
-  }
-}
-
 // add required trailing slash to FHIR URL if not present
-options.fhirUrl = options.fhirUrl.replace(/\/*$/, '/');
+if (options.fhirUrl) {
+  options.fhirUrl = options.fhirUrl.replace(/\/*$/, '/');
+}
 // get absolute path for specified destination directory
 const destination = resolve(options.destination);
 
@@ -107,13 +96,7 @@ const validateInputs = (opts: OptionValues) => {
   }
 };
 
-const main = async (options: NormalizedOptions) => {
-  validateInputs(program.opts());
-
-  if (options.privateKey) {
-    program.opts().privateKey = await resolveJWK(options.privateKey);
-  }
-
+const checkForDestination = async () => {
   if (!fs.existsSync(destination)) {
     console.log(`Destination ${destination} does not exist.`);
     const rl = readline.createInterface({
@@ -129,115 +112,74 @@ const main = async (options: NormalizedOptions) => {
     }
     rl.close();
   }
+};
 
-  const client = new BulkDataClient({ ...options, destination } as NormalizedOptions);
-  if (options.reporter === 'text') {
-    TextReporter(client);
-  } else CLIReporter(client);
+const main = async (options: NormalizedOptions) => {
+  validateInputs(program.opts());
 
-  const logFile = `${destination}/${options.logFile}`;
-  const logger = Logger.createLogger({ enabled: true, file: logFile } as Types.LoggingOptions);
-  const startTime = Date.now();
+  if (options.privateKey) {
+    program.opts().privateKey = await resolveJWK(options.privateKey);
+  }
 
-  client.on('kickOffEnd', ({ requestParameters, capabilityStatement, response }: KickOffEnd) => {
-    logger.log('info', {
-      eventId: 'kickoff',
-      eventDetail: {
-        exportUrl: response.requestUrl,
-        errorCode: response.statusCode >= 400 ? response.statusCode : null,
-        errorBody: response.statusCode >= 400 ? response.body : null,
-        softwareName: capabilityStatement.software?.name || null,
-        softwareVersion: capabilityStatement.software?.version || null,
-        softwareReleaseDate: capabilityStatement.software?.releaseDate || null,
-        fhirVersion: capabilityStatement.fhirVersion || null,
-        requestParameters,
-      },
-    });
-  });
+  if (options.fhirUrl && options.group) {
+    // execute "Step 1": bulk data export
+    await checkForDestination();
+    const client = new BulkDataClient({ ...options, destination } as NormalizedOptions);
+    if (options.reporter === 'text') {
+      TextReporter(client);
+    } else CLIReporter(client);
 
-  client.on('exportProgress', (e: Types.ExportStatus) => {
-    if (!e.virtual) {
-      // skip the artificially triggered 100% event
-      logger.log('info', {
-        eventId: 'status_progress',
-        eventDetail: {
-          body: e.body,
-          xProgress: e.xProgressHeader,
-          retryAfter: e.retryAfterHeader,
-        },
+    const logFile = `${destination}/${options.logFile}`;
+    const logger = Logger.createLogger({ enabled: true, file: logFile } as Types.LoggingOptions);
+
+    setLoggingEvents(logger, client);
+    
+
+    const statusEndpoint = await client.kickOff();
+    const manifest = await client.waitForExport(statusEndpoint);
+    await client.downloadAllFiles(manifest);
+
+    await createExportReport(destination, logFile);
+    if (options.measureBundle) {
+      // execute "Step 2": create patient ndjson bundles
+      const parsedNDJSON = getNDJSONFromDir(options.destination, 'Patient');
+      const patientBundles = parsedNDJSON.map((patient) => {
+        return assemblePatientBundle(patient as fhir4.Patient, options.destination);
       });
+      // execute "Step 3": perform measure calculation on measure and patient bundles
+      const calculationOptions: CalculatorTypes.CalculationOptions = {
+        measurementPeriodStart: '2019-01-01',
+        measurementPeriodEnd: '2019-12-31',
+      };
+      const measureBundle = await loadBundleFromFile(options.measureBundle);
+      const result = await calculateMeasureReports(measureBundle, patientBundles, calculationOptions);
+      writeFile(options.outputPath, JSON.stringify(result?.results, null, 2), (err) => {
+        if (err) throw err;
+      });
+      console.log(`Output written to ${options.outputPath}`);
     }
-  });
-
-  client.on('exportError', (eventDetail: ExportError) => {
-    logger.log('error', {
-      eventId: 'status_error',
-      eventDetail,
+  } else if (options.measureBundle) {
+    // execute "Step 2": create patient ndjson bundles
+    const parsedNDJSON = getNDJSONFromDir(options.destination, 'Patient');
+    const patientBundles = parsedNDJSON.map((patient) => {
+      return assemblePatientBundle(patient as fhir4.Patient, options.destination);
     });
-  });
-
-  client.on('exportComplete', (manifest: Types.ExportManifest) => {
-    logger.log('info', {
-      eventId: 'status_complete',
-      eventDetail: {
-        transactionTime: manifest.transactionTime,
-        outputFileCount: manifest.output.length,
-        deletedFileCount: manifest.deleted?.length || 0,
-        errorFileCount: manifest.error?.length || 0,
-      },
-    });
-  });
-
-  client.on('downloadStart', (eventDetail: DownloadStart) => {
-    logger.log('info', { eventId: 'download_request', eventDetail });
-  });
-
-  client.on('downloadError', (eventDetail: DownloadError) => {
-    logger.log('info', { eventId: 'download_error', eventDetail });
-  });
-
-  client.on('downloadComplete', (eventDetail: DownloadComplete) => {
-    logger.log('info', { eventId: 'download_complete', eventDetail });
-  });
-
-  client.on('allDownloadsComplete', (downloads: Types.FileDownload[]) => {
-    const eventDetail = {
-      files: 0,
-      resources: 0,
-      bytes: 0,
-      attachments: 0,
-      duration: (Date.now() - startTime) / 1000,
+    // TODO: throw error if no ndjson present?? --> already throw error for empty patient bundles
+    // but could potentially do something more detailed here
+    // execute "Step 3": perform measure calculation on measure and patient bundles
+    const calculationOptions: CalculatorTypes.CalculationOptions = {
+      measurementPeriodStart: '2019-01-01',
+      measurementPeriodEnd: '2019-12-31',
     };
-
-    downloads.forEach((d) => {
-      eventDetail.files += 1;
-      eventDetail.resources += d.resources;
-      eventDetail.bytes += d.uncompressedBytes;
-      eventDetail.attachments += d.attachments;
+    const measureBundle = await loadBundleFromFile(options.measureBundle);
+    const result = await calculateMeasureReports(measureBundle, patientBundles, calculationOptions);
+    writeFile(options.outputPath, JSON.stringify(result?.results, null, 2), (err) => {
+      if (err) throw err;
     });
-
-    logger.log('info', { eventId: 'export_complete', eventDetail });
-  });
-
-  const statusEndpoint = await client.kickOff();
-  const manifest = await client.waitForExport(statusEndpoint);
-  await client.downloadAllFiles(manifest);
-
-  await createExportReport(destination, logFile);
-  const parsedNDJSON = getNDJSONFromDir(options.destination, 'Patient');
-  const patientBundles = parsedNDJSON.map((patient) => {
-    return assemblePatientBundle(patient as fhir4.Patient, options.destination);
-  });
-  const calculationOptions: CalculatorTypes.CalculationOptions = {
-    measurementPeriodStart: '2019-01-01',
-    measurementPeriodEnd: '2019-12-31',
-  };
-  const measureBundle = await loadBundleFromFile(options.measureBundle);
-  const result = await calculateMeasureReports(measureBundle, patientBundles, calculationOptions);
-  writeFile(options.outputPath, JSON.stringify(result?.results, null, 2), (err) => {
-    if (err) throw err;
-  });
-  console.log(`Output written to ${options.outputPath}`);
+    console.log(`Output written to ${options.outputPath}`);
+  } else if ((options.fhirUrl && !options.group) || (!options.fhirUrl && options.group)) {
+    throw new Error('A FHIR server URL and FHIR Group id must both be provided to kick off $export');
+  }
 };
 
 main(options);
