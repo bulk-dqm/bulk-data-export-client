@@ -22,6 +22,12 @@ module.exports = {
   measureBundle: null,
 
   /**
+   * Directory containing patient bundles. Can be overriden by the `-b` or `--patient-bundles`
+   * CLI parameter.
+   */
+  patientBundles: null,
+
+  /**
    * The Bulk Data server token URL ("none" for open servers)
    */
   tokenUrl: 'none',

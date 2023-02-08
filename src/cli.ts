@@ -15,13 +15,14 @@ import { createExportReport } from './reportGenerator';
 import { assemblePatientBundle, getNDJSONFromDir } from './ndjsonToBundle';
 import { writeFile } from 'fs';
 import { CalculatorTypes } from 'fqm-execution';
-import { calculateMeasureReports, loadBundleFromFile } from './fqm';
+import { calculateMeasureReports, loadBundleFromFile, loadPatientBundlesFromDir } from './fqm';
 import { setLoggingEvents } from './logEvents';
 
 interface NormalizedOptions extends Omit<Types.NormalizedOptions, 'privateKey'> {
   logFile: string;
   outputPath: string;
   measureBundle: string;
+  patientBundles: string;
   privateKey: any;
 }
 
@@ -32,6 +33,7 @@ program
   .option('-f, --fhir-url <url>', 'Base URL of FHIR server used for data retrieval')
   .option('-g, --group <id>', 'FHIR Group ID used to query FHIR server for resources')
   .option('-m, --measure-bundle <measure-bundle>', 'Path to measure bundle.')
+  .option('-b, --patient-bundles <patient-bundles>', 'Directory containing patient bundles.', 'patientBundles')
   .option(
     '-d, --destination <destination>',
     'Download destination relative to current working directory. Defaults to ./downloads',
@@ -78,8 +80,8 @@ Object.assign(options, params);
 if (options.fhirUrl) {
   options.fhirUrl = options.fhirUrl.replace(/\/*$/, '/');
 }
-// get absolute path for specified destination directory
-const destination = resolve(options.destination);
+// get absolute path for specified destination
+options.destination = resolve(options.destination);
 
 const validateInputs = (opts: OptionValues) => {
   if (opts.tokenUrl || opts.clientId || opts.privateKey) {
@@ -96,7 +98,7 @@ const validateInputs = (opts: OptionValues) => {
   }
 };
 
-const checkForDestination = async () => {
+const checkDestinationExists = async (destination: string) => {
   if (!fs.existsSync(destination)) {
     console.log(`Destination ${destination} does not exist.`);
     const rl = readline.createInterface({
@@ -114,6 +116,74 @@ const checkForDestination = async () => {
   }
 };
 
+/**
+ * Completes "Step 1" of the pipeline.
+ * Kicks off bulk data $export operation, saves downloaded ndjson to the
+ * directory specified by the CLI options (-g flag), and generates HTML export report.
+ */
+const executeExport = async () => {
+  await checkDestinationExists(options.destination);
+  const client = new BulkDataClient(options as NormalizedOptions);
+  if (options.reporter === 'text') {
+    TextReporter(client);
+  } else CLIReporter(client);
+
+  const logFile = `${options.destination}/${options.logFile}`;
+  const logger = Logger.createLogger({ enabled: true, file: logFile } as Types.LoggingOptions);
+  setLoggingEvents(logger, client);
+
+  const statusEndpoint = await client.kickOff();
+  const manifest = await client.waitForExport(statusEndpoint);
+  await client.downloadAllFiles(manifest);
+  await createExportReport(options.destination, logFile);
+};
+
+/**
+ * Completes "Step 2" of the pipeline.
+ * Accesses the NDJSON from the downloads directory (-d flag) and uses them to
+ * assemble FHIR patient bundles. Returns an array of patient bundles
+ * to be used for measure calculation and saves to the patient bundles directory
+ * specified in the CLI options (-b flag).
+ */
+const createPatientBundles = () => {
+  const bundleDirectory = resolve(options.patientBundles);
+  const parsedNDJSON = getNDJSONFromDir(options.destination, 'Patient');
+  if (!fs.existsSync(bundleDirectory)) {
+    fs.mkdirSync(bundleDirectory, { recursive: true });
+  }
+  const patientBundles = parsedNDJSON.map((patient) => {
+    return assemblePatientBundle(patient as fhir4.Patient, options.destination);
+  });
+  patientBundles.forEach((bundle) => {
+    const patientId = bundle.entry.find((res) => res.resource?.resourceType === 'Patient')?.resource?.id;
+    writeFile(`${bundleDirectory}/Patient-${patientId}.json`, JSON.stringify(bundle, null, 2), (err) => {
+      if (err) throw err;
+    });
+  });
+
+  console.log(`FHIR Patient Bundles written to ${options.patientBundles}`);
+};
+
+/**
+ * Completes "Step 3" of the pipeline.
+ * Uses the FHIR patient bundles stored in the bundles directory (-b flag) and the
+ * specified measure bundle to run measure calculation. Saves the resulting FHIR
+ * Measure Reports to file.
+ */
+const runMeasureCalculation = async () => {
+  const calculationOptions: CalculatorTypes.CalculationOptions = {
+    measurementPeriodStart: '2019-01-01',
+    measurementPeriodEnd: '2019-12-31',
+  };
+  const measureBundle = await loadBundleFromFile(options.measureBundle);
+  const patientBundles = await loadPatientBundlesFromDir(options.patientBundles);
+  const result = await calculateMeasureReports(measureBundle, patientBundles, calculationOptions);
+  writeFile(options.outputPath, JSON.stringify(result?.results, null, 2), (err) => {
+    if (err) throw err;
+  });
+  console.log(`Output written to ${options.outputPath}`);
+};
+
 const main = async (options: NormalizedOptions) => {
   validateInputs(program.opts());
 
@@ -123,60 +193,18 @@ const main = async (options: NormalizedOptions) => {
 
   if (options.fhirUrl && options.group) {
     // execute "Step 1": bulk data export
-    await checkForDestination();
-    const client = new BulkDataClient({ ...options, destination } as NormalizedOptions);
-    if (options.reporter === 'text') {
-      TextReporter(client);
-    } else CLIReporter(client);
-
-    const logFile = `${destination}/${options.logFile}`;
-    const logger = Logger.createLogger({ enabled: true, file: logFile } as Types.LoggingOptions);
-
-    setLoggingEvents(logger, client);
-    
-
-    const statusEndpoint = await client.kickOff();
-    const manifest = await client.waitForExport(statusEndpoint);
-    await client.downloadAllFiles(manifest);
-
-    await createExportReport(destination, logFile);
+    await executeExport();
     if (options.measureBundle) {
       // execute "Step 2": create patient ndjson bundles
-      const parsedNDJSON = getNDJSONFromDir(options.destination, 'Patient');
-      const patientBundles = parsedNDJSON.map((patient) => {
-        return assemblePatientBundle(patient as fhir4.Patient, options.destination);
-      });
+      createPatientBundles();
       // execute "Step 3": perform measure calculation on measure and patient bundles
-      const calculationOptions: CalculatorTypes.CalculationOptions = {
-        measurementPeriodStart: '2019-01-01',
-        measurementPeriodEnd: '2019-12-31',
-      };
-      const measureBundle = await loadBundleFromFile(options.measureBundle);
-      const result = await calculateMeasureReports(measureBundle, patientBundles, calculationOptions);
-      writeFile(options.outputPath, JSON.stringify(result?.results, null, 2), (err) => {
-        if (err) throw err;
-      });
-      console.log(`Output written to ${options.outputPath}`);
+      runMeasureCalculation();
     }
   } else if (options.measureBundle) {
     // execute "Step 2": create patient ndjson bundles
-    const parsedNDJSON = getNDJSONFromDir(options.destination, 'Patient');
-    const patientBundles = parsedNDJSON.map((patient) => {
-      return assemblePatientBundle(patient as fhir4.Patient, options.destination);
-    });
-    // TODO: throw error if no ndjson present?? --> already throw error for empty patient bundles
-    // but could potentially do something more detailed here
+    createPatientBundles();
     // execute "Step 3": perform measure calculation on measure and patient bundles
-    const calculationOptions: CalculatorTypes.CalculationOptions = {
-      measurementPeriodStart: '2019-01-01',
-      measurementPeriodEnd: '2019-12-31',
-    };
-    const measureBundle = await loadBundleFromFile(options.measureBundle);
-    const result = await calculateMeasureReports(measureBundle, patientBundles, calculationOptions);
-    writeFile(options.outputPath, JSON.stringify(result?.results, null, 2), (err) => {
-      if (err) throw err;
-    });
-    console.log(`Output written to ${options.outputPath}`);
+    runMeasureCalculation();
   } else if ((options.fhirUrl && !options.group) || (!options.fhirUrl && options.group)) {
     throw new Error('A FHIR server URL and FHIR Group id must both be provided to kick off $export');
   }

@@ -2,7 +2,7 @@ import { BulkDataClient as Types } from 'bulk-data-client';
 import { DownloadComplete, KickOffEnd, ExportError, DownloadStart, DownloadError } from './types/logTypes';
 
 export const setLoggingEvents = (logger: any, client: any) => {
-    const startTime = Date.now();
+  const startTime = Date.now();
   client.on('kickOffEnd', ({ requestParameters, capabilityStatement, response }: KickOffEnd) => {
     logger.log('info', {
       eventId: 'kickoff',
