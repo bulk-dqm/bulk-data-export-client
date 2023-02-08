@@ -206,7 +206,7 @@ const main = async (options: NormalizedOptions) => {
       resources: 0,
       bytes: 0,
       attachments: 0,
-      duration: Date.now() - startTime,
+      duration: (Date.now() - startTime) / 1000,
     };
 
     downloads.forEach((d) => {
