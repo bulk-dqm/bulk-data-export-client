@@ -8,28 +8,36 @@ import 'colors';
 import { BulkDataClient as Types } from 'bulk-data-client';
 import BulkDataClient from 'bulk-data-client/built/lib/BulkDataClient';
 import CLIReporter from 'bulk-data-client/built/reporters/cli';
+import TextReporter from 'bulk-data-client/built/reporters/text';
 import { resolveJWK } from './jwk';
 import * as Logger from 'bulk-data-client/built/loggers/index';
-import { DownloadComplete, KickOffEnd, ExportError, DownloadStart, DownloadError } from './logTypes';
+import { DownloadComplete, KickOffEnd, ExportError, DownloadStart, DownloadError } from './types/logTypes';
 import { createExportReport } from './reportGenerator';
 import { assemblePatientBundle, getNDJSONFromDir } from './ndjsonToBundle';
 import { writeFile } from 'fs';
 import { CalculatorTypes } from 'fqm-execution';
 import { calculateMeasureReports, loadBundleFromFile } from './fqm';
 
+interface NormalizedOptions extends Omit<Types.NormalizedOptions, 'privateKey'> {
+  logFile: string;
+  outputPath: string;
+  measureBundle: string;
+  privateKey: any;
+}
+
 const program = new Command();
 
 // specify options for bulk data request and retrieval
 program
-  .requiredOption('-f, --fhir-url <url>', 'Base URL of FHIR server used for data retrieval')
-  .requiredOption('-g, --group <id>', 'FHIR Group ID used to query FHIR server for resources')
-  .requiredOption('-m, --measure-bundle <measure-bundle>', 'Path to measure bundle.')
+  .option('-f, --fhir-url <url>', 'Base URL of FHIR server used for data retrieval')
+  .option('-g, --group <id>', 'FHIR Group ID used to query FHIR server for resources')
+  .option('-m, --measure-bundle <measure-bundle>', 'Path to measure bundle.')
   .option(
     '-d, --destination <destination>',
     'Download destination relative to current working directory. Defaults to ./downloads',
     `${process.cwd()}/downloads`
   )
-  .option('-p, --parallel-downloads <number>', 'Number of downloads to run in parallel. Defaults to 1.', '1')
+  .option('-p, --parallel-downloads <number>', 'Number of downloads to run in parallel. Defaults to 5.')
   .option('--token-url <tokenUrl>', 'Bulk Token Authorization Endpoint')
   .option('--client-id <clientId>', 'Bulk Data Client ID')
   .option('--private-key <url>', 'File containing private key used to sign authentication tokens')
@@ -39,15 +47,53 @@ program
     'log.ndjson'
   )
   .option('-o, --output-path <path>', 'Output path for FHIR MeasureReports. Defaults to output.json.', 'output.json')
+  .option(
+    '--reporter [cli|text]',
+    'Reporter to use to render the output. "cli" renders fancy progress bars and tables. "text" is better for log files. Defaults to "cli".'
+  )
+  .option(
+    '--lenient',
+    'Sets a "Prefer: handling=lenient" request header to tell the server to ignore unsupported parameters.'
+  )
+  .option('--config <path>', 'Relative path to a config file. Otherwise uses default options.')
   .parseAsync(process.argv);
 
+// use default options for parameters not set by the CLI
+const { config, ...params } = program.opts();
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const base: NormalizedOptions = require('../config/defaults');
+const options: NormalizedOptions = { ...base };
+
+if (config) {
+  // use custom config file to populate parameter values
+  const configPath = resolve(__dirname, 'config', config);
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const cfg = require(configPath);
+  Object.assign(options, cfg);
+}
+// assign parameter values set by the CLI
+Object.assign(options, params);
+
+if (!options.fhirUrl || !options.group || !options.measureBundle) {
+  const missingInputs: string[] = [];
+  if (!options.fhirUrl) missingInputs.push('fhirUrl');
+  if (!options.group) missingInputs.push('group');
+  if (!options.measureBundle) missingInputs.push('measureBundle');
+
+  if (missingInputs.length > 0) {
+    throw new Error(
+      `The following inputs are required configuration options that are missing: ${missingInputs.join(', ')}. `
+    );
+  }
+}
+
 // add required trailing slash to FHIR URL if not present
-program.opts().fhirUrl = program.opts().fhirUrl.replace(/\/*$/, '/');
+options.fhirUrl = options.fhirUrl.replace(/\/*$/, '/');
 // get absolute path for specified destination directory
-const destination = resolve(program.opts().destination);
+const destination = resolve(options.destination);
 
 const validateInputs = (opts: OptionValues) => {
-  if (opts.tokenUrl || opts.cliendId || opts.privateKey) {
+  if (opts.tokenUrl || opts.clientId || opts.privateKey) {
     const missingInputs: string[] = [];
     if (!opts.tokenUrl) missingInputs.push('Token URL');
     if (!opts.clientId) missingInputs.push('Client ID');
@@ -61,30 +107,12 @@ const validateInputs = (opts: OptionValues) => {
   }
 };
 
-const main = async () => {
-  const requests = {
-    https: {
-      // reject self-signed certs
-      rejectUnauthorized: true,
-    },
-    timeout: 30000,
-    headers: {
-      // pass custom headers
-    },
-  };
-
+const main = async (options: NormalizedOptions) => {
   validateInputs(program.opts());
 
-  if (program.opts().privateKey) {
-    program.opts().privateKey = await resolveJWK(program.opts().privateKey);
+  if (options.privateKey) {
+    program.opts().privateKey = await resolveJWK(options.privateKey);
   }
-
-  const options = {
-    ...program.opts(),
-    inlineDocRefAttachmentTypes: [],
-    destination,
-    requests,
-  } as Types.NormalizedOptions;
 
   if (!fs.existsSync(destination)) {
     console.log(`Destination ${destination} does not exist.`);
@@ -102,10 +130,12 @@ const main = async () => {
     rl.close();
   }
 
-  const client = new BulkDataClient(options as Types.NormalizedOptions);
-  CLIReporter(client);
+  const client = new BulkDataClient({ ...options, destination } as NormalizedOptions);
+  if (options.reporter === 'text') {
+    TextReporter(client);
+  } else CLIReporter(client);
 
-  const logFile = `${destination}/${program.opts().logFile}`;
+  const logFile = `${destination}/${options.logFile}`;
   const logger = Logger.createLogger({ enabled: true, file: logFile } as Types.LoggingOptions);
   const startTime = Date.now();
 
@@ -194,20 +224,20 @@ const main = async () => {
   await client.downloadAllFiles(manifest);
 
   await createExportReport(destination, logFile);
-  const parsedNDJSON = getNDJSONFromDir(program.opts().destination, 'Patient');
+  const parsedNDJSON = getNDJSONFromDir(options.destination, 'Patient');
   const patientBundles = parsedNDJSON.map((patient) => {
-    return assemblePatientBundle(patient as fhir4.Patient, program.opts().destination);
+    return assemblePatientBundle(patient as fhir4.Patient, options.destination);
   });
   const calculationOptions: CalculatorTypes.CalculationOptions = {
     measurementPeriodStart: '2019-01-01',
     measurementPeriodEnd: '2019-12-31',
   };
-  const measureBundle = await loadBundleFromFile(program.opts().measureBundle);
+  const measureBundle = await loadBundleFromFile(options.measureBundle);
   const result = await calculateMeasureReports(measureBundle, patientBundles, calculationOptions);
-  writeFile(program.opts().outputPath, JSON.stringify(result?.results, null, 2), (err) => {
+  writeFile(options.outputPath, JSON.stringify(result?.results, null, 2), (err) => {
     if (err) throw err;
   });
-  console.log(`Output written to ${program.opts().outputPath}`);
+  console.log(`Output written to ${options.outputPath}`);
 };
 
-main();
+main(options);

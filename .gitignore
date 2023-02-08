@@ -6,3 +6,6 @@ testDir
 
 .DS_Store
 *.html
+
+config/*
+!config/defaults.js
