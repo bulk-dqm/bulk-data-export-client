@@ -33,11 +33,10 @@ program
   .option('-f, --fhir-url <url>', 'Base URL of FHIR server used for data retrieval')
   .option('-g, --group <id>', 'FHIR Group ID used to query FHIR server for resources')
   .option('-m, --measure-bundle <measure-bundle>', 'Path to measure bundle.')
-  .option('-b, --patient-bundles <patient-bundles>', 'Directory containing patient bundles.', 'patientBundles')
+  .option('-b, --patient-bundles <patient-bundles>', 'Directory containing patient bundles.')
   .option(
     '-d, --destination <destination>',
-    'Download destination relative to current working directory. Defaults to ./downloads',
-    `${process.cwd()}/downloads`
+    'Download destination relative to current working directory. Defaults to ./downloads'
   )
   .option('-p, --parallel-downloads <number>', 'Number of downloads to run in parallel. Defaults to 5.')
   .option('--token-url <tokenUrl>', 'Bulk Token Authorization Endpoint')
@@ -80,8 +79,6 @@ Object.assign(options, params);
 if (options.fhirUrl) {
   options.fhirUrl = options.fhirUrl.replace(/\/*$/, '/');
 }
-// get absolute path for specified destination
-options.destination = resolve(options.destination);
 
 const validateInputs = (opts: OptionValues) => {
   if (opts.tokenUrl || opts.clientId || opts.privateKey) {
@@ -122,6 +119,7 @@ const checkDestinationExists = async (destination: string) => {
  * directory specified by the CLI options (-g flag), and generates HTML export report.
  */
 const executeExport = async () => {
+  if (!options.destination) options.destination = `${process.cwd()}/downloads`;
   await checkDestinationExists(options.destination);
   const client = new BulkDataClient(options as NormalizedOptions);
   if (options.reporter === 'text') {
@@ -145,8 +143,8 @@ const executeExport = async () => {
  * to be used for measure calculation and saves to the patient bundles directory
  * specified in the CLI options (-b flag).
  */
-const createPatientBundles = () => {
-  const bundleDirectory = resolve(options.patientBundles);
+const createPatientBundles = (patientBundleDir: string) => {
+  const bundleDirectory = resolve(patientBundleDir);
   const parsedNDJSON = getNDJSONFromDir(options.destination, 'Patient');
   if (!fs.existsSync(bundleDirectory)) {
     fs.mkdirSync(bundleDirectory, { recursive: true });
@@ -161,7 +159,7 @@ const createPatientBundles = () => {
     });
   });
 
-  console.log(`FHIR Patient Bundles written to ${options.patientBundles}`);
+  console.log(`FHIR Patient Bundles written to ${patientBundleDir}`);
 };
 
 /**
@@ -176,7 +174,7 @@ const runMeasureCalculation = async () => {
     measurementPeriodEnd: '2019-12-31',
   };
   const measureBundle = await loadBundleFromFile(options.measureBundle);
-  const patientBundles = await loadPatientBundlesFromDir(options.patientBundles);
+  const patientBundles = await loadPatientBundlesFromDir(options.patientBundles ?? 'patientBundles');
   const result = await calculateMeasureReports(measureBundle, patientBundles, calculationOptions);
   writeFile(options.outputPath, JSON.stringify(result?.results, null, 2), (err) => {
     if (err) throw err;
@@ -191,22 +189,28 @@ const main = async (options: NormalizedOptions) => {
     program.opts().privateKey = await resolveJWK(options.privateKey);
   }
 
+  // execute "Step 1": bulk data export
   if (options.fhirUrl && options.group) {
-    // execute "Step 1": bulk data export
     await executeExport();
+    // execute "Step 2": generate patient bundles
+    if (options.patientBundles || options.measureBundle) {
+      createPatientBundles(options.patientBundles ?? 'patientBundles');
+    }
+    // execute "Step 3": measure calculation
     if (options.measureBundle) {
-      // execute "Step 2": create patient ndjson bundles
-      createPatientBundles();
-      // execute "Step 3": perform measure calculation on measure and patient bundles
-      runMeasureCalculation();
+      await runMeasureCalculation();
     }
   } else if (options.measureBundle) {
-    // execute "Step 2": create patient ndjson bundles
-    createPatientBundles();
-    // execute "Step 3": perform measure calculation on measure and patient bundles
-    runMeasureCalculation();
-  } else if ((options.fhirUrl && !options.group) || (!options.fhirUrl && options.group)) {
-    throw new Error('A FHIR server URL and FHIR Group id must both be provided to kick off $export');
+    // execute "Step 2": generate patient bundles
+    if (options.destination) {
+      createPatientBundles(options.patientBundles ?? 'patientBundles');
+    }
+    await runMeasureCalculation();
+  } else if (options.destination) {
+    // only execute "Step 2": generate patient bundles
+    createPatientBundles(options.patientBundles ?? 'patientBundles');
+  } else {
+    program.help();
   }
 };
 

@@ -244,7 +244,7 @@ module.exports = {
    *
    * Can be overridden from terminal parameter `-d` or `--destination`
    */
-  destination: './downloads',
+  destination: null,
 
   /**
    * **Example: `us-east-1`**
