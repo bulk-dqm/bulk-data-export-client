@@ -16,7 +16,8 @@
     "prettier:fix": "prettier --write \"**/*.{js,ts}\"",
     "test": "jest",
     "test:coverage": "jest --coverage",
-    "parse-compartment-definition": "ts-node ./scripts/parseCompartmentDefinition.js"
+    "parse-compartment-definition": "ts-node ./scripts/parseCompartmentDefinition.js",
+    "generate-report": "ts-node ./scripts/createReportFromLogs.ts"
   },
   "repository": {
     "type": "git",
