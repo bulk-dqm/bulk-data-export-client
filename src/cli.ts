@@ -11,17 +11,18 @@ import CLIReporter from 'bulk-data-client/built/reporters/cli';
 import TextReporter from 'bulk-data-client/built/reporters/text';
 import { resolveJWK } from './jwk';
 import * as Logger from 'bulk-data-client/built/loggers/index';
-import { DownloadComplete, KickOffEnd, ExportError, DownloadStart, DownloadError } from './types/logTypes';
 import { createExportReport } from './reportGenerator';
 import { assemblePatientBundle, getNDJSONFromDir } from './ndjsonToBundle';
 import { writeFile } from 'fs';
 import { CalculatorTypes } from 'fqm-execution';
-import { calculateMeasureReports, loadBundleFromFile } from './fqm';
+import { calculateMeasureReports, loadBundleFromFile, loadPatientBundlesFromDir } from './fqm';
+import { setLoggingEvents } from './logEvents';
 
 interface NormalizedOptions extends Omit<Types.NormalizedOptions, 'privateKey'> {
   logFile: string;
   outputPath: string;
   measureBundle: string;
+  patientBundles: string;
   privateKey: any;
 }
 
@@ -32,10 +33,10 @@ program
   .option('-f, --fhir-url <url>', 'Base URL of FHIR server used for data retrieval')
   .option('-g, --group <id>', 'FHIR Group ID used to query FHIR server for resources')
   .option('-m, --measure-bundle <measure-bundle>', 'Path to measure bundle.')
+  .option('-b, --patient-bundles <patient-bundles>', 'Directory containing patient bundles.')
   .option(
     '-d, --destination <destination>',
-    'Download destination relative to current working directory. Defaults to ./downloads',
-    `${process.cwd()}/downloads`
+    'Download destination relative to current working directory. Defaults to ./downloads'
   )
   .option('-p, --parallel-downloads <number>', 'Number of downloads to run in parallel. Defaults to 5.')
   .option('--token-url <tokenUrl>', 'Bulk Token Authorization Endpoint')
@@ -74,23 +75,10 @@ if (config) {
 // assign parameter values set by the CLI
 Object.assign(options, params);
 
-if (!options.fhirUrl || !options.group || !options.measureBundle) {
-  const missingInputs: string[] = [];
-  if (!options.fhirUrl) missingInputs.push('fhirUrl');
-  if (!options.group) missingInputs.push('group');
-  if (!options.measureBundle) missingInputs.push('measureBundle');
-
-  if (missingInputs.length > 0) {
-    throw new Error(
-      `The following inputs are required configuration options that are missing: ${missingInputs.join(', ')}. `
-    );
-  }
-}
-
 // add required trailing slash to FHIR URL if not present
-options.fhirUrl = options.fhirUrl.replace(/\/*$/, '/');
-// get absolute path for specified destination directory
-const destination = resolve(options.destination);
+if (options.fhirUrl) {
+  options.fhirUrl = options.fhirUrl.replace(/\/*$/, '/');
+}
 
 const validateInputs = (opts: OptionValues) => {
   if (opts.tokenUrl || opts.clientId || opts.privateKey) {
@@ -107,13 +95,7 @@ const validateInputs = (opts: OptionValues) => {
   }
 };
 
-const main = async (options: NormalizedOptions) => {
-  validateInputs(program.opts());
-
-  if (options.privateKey) {
-    program.opts().privateKey = await resolveJWK(options.privateKey);
-  }
-
+const checkDestinationExists = async (destination: string) => {
   if (!fs.existsSync(destination)) {
     console.log(`Destination ${destination} does not exist.`);
     const rl = readline.createInterface({
@@ -129,115 +111,107 @@ const main = async (options: NormalizedOptions) => {
     }
     rl.close();
   }
+};
 
-  const client = new BulkDataClient({ ...options, destination } as NormalizedOptions);
+/**
+ * Completes "Step 1" of the pipeline.
+ * Kicks off bulk data $export operation, saves downloaded ndjson to the
+ * directory specified by the CLI options (-g flag), and generates HTML export report.
+ */
+const executeExport = async () => {
+  if (!options.destination) options.destination = `${process.cwd()}/downloads`;
+  await checkDestinationExists(options.destination);
+  const client = new BulkDataClient(options as NormalizedOptions);
   if (options.reporter === 'text') {
     TextReporter(client);
   } else CLIReporter(client);
 
-  const logFile = `${destination}/${options.logFile}`;
+  const logFile = `${options.destination}/${options.logFile}`;
   const logger = Logger.createLogger({ enabled: true, file: logFile } as Types.LoggingOptions);
-  const startTime = Date.now();
-
-  client.on('kickOffEnd', ({ requestParameters, capabilityStatement, response }: KickOffEnd) => {
-    logger.log('info', {
-      eventId: 'kickoff',
-      eventDetail: {
-        exportUrl: response.requestUrl,
-        errorCode: response.statusCode >= 400 ? response.statusCode : null,
-        errorBody: response.statusCode >= 400 ? response.body : null,
-        softwareName: capabilityStatement.software?.name || null,
-        softwareVersion: capabilityStatement.software?.version || null,
-        softwareReleaseDate: capabilityStatement.software?.releaseDate || null,
-        fhirVersion: capabilityStatement.fhirVersion || null,
-        requestParameters,
-      },
-    });
-  });
-
-  client.on('exportProgress', (e: Types.ExportStatus) => {
-    if (!e.virtual) {
-      // skip the artificially triggered 100% event
-      logger.log('info', {
-        eventId: 'status_progress',
-        eventDetail: {
-          body: e.body,
-          xProgress: e.xProgressHeader,
-          retryAfter: e.retryAfterHeader,
-        },
-      });
-    }
-  });
-
-  client.on('exportError', (eventDetail: ExportError) => {
-    logger.log('error', {
-      eventId: 'status_error',
-      eventDetail,
-    });
-  });
-
-  client.on('exportComplete', (manifest: Types.ExportManifest) => {
-    logger.log('info', {
-      eventId: 'status_complete',
-      eventDetail: {
-        transactionTime: manifest.transactionTime,
-        outputFileCount: manifest.output.length,
-        deletedFileCount: manifest.deleted?.length || 0,
-        errorFileCount: manifest.error?.length || 0,
-      },
-    });
-  });
-
-  client.on('downloadStart', (eventDetail: DownloadStart) => {
-    logger.log('info', { eventId: 'download_request', eventDetail });
-  });
-
-  client.on('downloadError', (eventDetail: DownloadError) => {
-    logger.log('info', { eventId: 'download_error', eventDetail });
-  });
-
-  client.on('downloadComplete', (eventDetail: DownloadComplete) => {
-    logger.log('info', { eventId: 'download_complete', eventDetail });
-  });
-
-  client.on('allDownloadsComplete', (downloads: Types.FileDownload[]) => {
-    const eventDetail = {
-      files: 0,
-      resources: 0,
-      bytes: 0,
-      attachments: 0,
-      duration: (Date.now() - startTime) / 1000,
-    };
-
-    downloads.forEach((d) => {
-      eventDetail.files += 1;
-      eventDetail.resources += d.resources;
-      eventDetail.bytes += d.uncompressedBytes;
-      eventDetail.attachments += d.attachments;
-    });
-
-    logger.log('info', { eventId: 'export_complete', eventDetail });
-  });
+  setLoggingEvents(logger, client);
 
   const statusEndpoint = await client.kickOff();
   const manifest = await client.waitForExport(statusEndpoint);
   await client.downloadAllFiles(manifest);
+  await createExportReport(options.destination, logFile);
+};
 
-  await createExportReport(destination, logFile);
+/**
+ * Completes "Step 2" of the pipeline.
+ * Accesses the NDJSON from the downloads directory (-d flag) and uses them to
+ * assemble FHIR patient bundles. Returns an array of patient bundles
+ * to be used for measure calculation and saves to the patient bundles directory
+ * specified in the CLI options (-b flag).
+ */
+const createPatientBundles = (patientBundleDir: string) => {
+  const bundleDirectory = resolve(patientBundleDir);
   const parsedNDJSON = getNDJSONFromDir(options.destination, 'Patient');
+  if (!fs.existsSync(bundleDirectory)) {
+    fs.mkdirSync(bundleDirectory, { recursive: true });
+  }
   const patientBundles = parsedNDJSON.map((patient) => {
     return assemblePatientBundle(patient as fhir4.Patient, options.destination);
   });
+  patientBundles.forEach((bundle) => {
+    const patientId = bundle.entry.find((res) => res.resource?.resourceType === 'Patient')?.resource?.id;
+    writeFile(`${bundleDirectory}/Patient-${patientId}.json`, JSON.stringify(bundle, null, 2), (err) => {
+      if (err) throw err;
+    });
+  });
+
+  console.log(`FHIR Patient Bundles written to ${patientBundleDir}`);
+};
+
+/**
+ * Completes "Step 3" of the pipeline.
+ * Uses the FHIR patient bundles stored in the bundles directory (-b flag) and the
+ * specified measure bundle to run measure calculation. Saves the resulting FHIR
+ * Measure Reports to file.
+ */
+const runMeasureCalculation = async () => {
   const calculationOptions: CalculatorTypes.CalculationOptions = {
     measurementPeriodStart: '2019-01-01',
     measurementPeriodEnd: '2019-12-31',
   };
   const measureBundle = await loadBundleFromFile(options.measureBundle);
+  const patientBundles = await loadPatientBundlesFromDir(options.patientBundles ?? 'patientBundles');
   const result = await calculateMeasureReports(measureBundle, patientBundles, calculationOptions);
   writeFile(options.outputPath, JSON.stringify(result?.results, null, 2), (err) => {
     if (err) throw err;
   });
   console.log(`Output written to ${options.outputPath}`);
+};
+
+const main = async (options: NormalizedOptions) => {
+  validateInputs(program.opts());
+
+  if (options.privateKey) {
+    program.opts().privateKey = await resolveJWK(options.privateKey);
+  }
+
+  // execute "Step 1": bulk data export
+  if (options.fhirUrl && options.group) {
+    await executeExport();
+    // execute "Step 2": generate patient bundles
+    if (options.patientBundles || options.measureBundle) {
+      createPatientBundles(options.patientBundles ?? 'patientBundles');
+    }
+    // execute "Step 3": measure calculation
+    if (options.measureBundle) {
+      await runMeasureCalculation();
+    }
+  } else if (options.measureBundle) {
+    // execute "Step 2": generate patient bundles
+    if (options.destination) {
+      createPatientBundles(options.patientBundles ?? 'patientBundles');
+    }
+    await runMeasureCalculation();
+  } else if (options.destination) {
+    // only execute "Step 2": generate patient bundles
+    createPatientBundles(options.patientBundles ?? 'patientBundles');
+  } else {
+    program.help();
+  }
 };
 
 main(options);

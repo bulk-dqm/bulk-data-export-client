@@ -1,6 +1,7 @@
 build
 node_modules
 downloads
+patientBundles
 coverage
 testDir
 
