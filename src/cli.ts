@@ -56,6 +56,10 @@ program
     '--lenient',
     'Sets a "Prefer: handling=lenient" request header to tell the server to ignore unsupported parameters.'
   )
+  .option(
+    '-t, --_type <resourceTypes>',
+    'String of comma-delimited FHIR resource types. If omitted, exports resources of all resource types.'
+  )
   .option('--config <path>', 'Relative path to a config file. Otherwise uses default options.')
   .parseAsync(process.argv);
 
