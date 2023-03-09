@@ -6,7 +6,7 @@ ABACUS_URL="http://localhost:3000/4_0_1"
 INFERNO_URL="http://localhost:8080/reference-server/r4"
 TOKEN="SAMPLE_TOKEN"
 
-for dir in ../../../synthea/bulk-data/*;
+for dir in $1/bulk-data/*;
 do
   if [ -d "$dir" ]; then
   echo 'Uploading patients in directory': "$dir";
