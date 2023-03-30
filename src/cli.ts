@@ -60,6 +60,7 @@ program
     '-t, --_type <resourceTypes>',
     'String of comma-delimited FHIR resource types. If omitted, exports resources of all resource types.'
   )
+  .option('-s, --_since <date>', 'Only include resources modified after the specified date.')
   .option('--config <path>', 'Relative path to a config file. Otherwise uses default options.')
   .parseAsync(process.argv);
 

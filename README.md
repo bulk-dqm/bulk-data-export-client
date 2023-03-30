@@ -61,6 +61,7 @@ The supported options for making a request to a FHIR server are as follows:
 --reporter [cli|text] Reporter to use to render the output. "cli" renders fancy progress bars and tables. "text" is better for log files. Defaults to "cli".
 --lenient Sets a "Prefer: handling=lenient" request header to tell the server to ignore unsupported parameters.
 -t, --_type <resourceTypes> String of comma-delimited FHIR resource types. If omitted, exports resources of all resource types.
+-s, --_since <date> Only include resources modified after the specified date. The parameter can be provided as a partial date.
 --config <path> Relative path to a config file. Otherwise uses default options.
 ```
 
