@@ -177,7 +177,7 @@ const runMeasureCalculation = async () => {
   const calculationOptions: CalculatorTypes.CalculationOptions = {
     measurementPeriodStart: '2019-01-01',
     measurementPeriodEnd: '2019-12-31',
-    reportType: 'summary'
+    reportType: 'summary',
   };
   const measureBundle = await loadBundleFromFile(options.measureBundle);
   const patientBundles = await loadPatientBundlesFromDir(options.patientBundles ?? 'patientBundles');
