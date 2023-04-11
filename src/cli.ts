@@ -61,6 +61,10 @@ program
     'String of comma-delimited FHIR resource types. If omitted, exports resources of all resource types.'
   )
   .option('-s, --_since <date>', 'Only include resources modified after the specified date.')
+  .option(
+    '-q, --_typeFilter <string>',
+    'Experimental _typeFilter parameter. Represents a string of comma delimited FHIR REST queries.'
+  )
   .option('--config <path>', 'Relative path to a config file. Otherwise uses default options.')
   .parseAsync(process.argv);
 
