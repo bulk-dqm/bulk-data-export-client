@@ -48,6 +48,7 @@ export const setLoggingEvents = (logger: any, client: any) => {
         outputFileCount: manifest.output.length,
         deletedFileCount: manifest.deleted?.length || 0,
         errorFileCount: manifest.error?.length || 0,
+        duration: ((Date.now() - startTime) / 1000).toFixed(2),
       },
     });
   });
@@ -70,7 +71,7 @@ export const setLoggingEvents = (logger: any, client: any) => {
       resources: 0,
       bytes: 0,
       attachments: 0,
-      duration: Date.now() - startTime,
+      duration: ((Date.now() - startTime) / 1000).toFixed(2),
     };
 
     downloads.forEach((d) => {
