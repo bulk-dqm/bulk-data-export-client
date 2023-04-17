@@ -18,7 +18,7 @@ export const createExportReport = async (file: string, downloadDir: string) => {
 
   // there should be one kickoff log and one export log, and at least one download log
   const kickoffResults = exportEvents.filter((log) => log.eventId === 'kickoff')[0];
-  const exportResults = exportEvents.filter((log) => log.eventId === 'status_complete')[0];
+  const statusCompleteResults = exportEvents.filter((log) => log.eventId === 'status_complete')[0];
   const exportCompleteResults = exportEvents.filter((log) => log.eventId === 'export_complete')[0];
   const downloadResults = exportEvents.filter((log) => log.eventId === 'download_complete');
   const numPollingRequests = exportEvents.filter((log) =>
@@ -38,9 +38,9 @@ export const createExportReport = async (file: string, downloadDir: string) => {
         <li>Files: ${exportCompleteResults.eventDetail.files}</li>
         <li>Resources: ${exportCompleteResults.eventDetail.resources}</li>
         <li> Total Duration: ${exportCompleteResults.eventDetail.duration} seconds</li>
-          <li> Export Duration: ${exportResults.eventDetail.duration} seconds</li>
+          <li> Export Duration: ${statusCompleteResults.eventDetail.duration} seconds</li>
           <li> Download Duration: ${(
-            exportCompleteResults.eventDetail.duration - exportResults.eventDetail.duration
+            exportCompleteResults.eventDetail.duration - statusCompleteResults.eventDetail.duration
           ).toFixed(2)} seconds</li>
       </ul>
       </p>
