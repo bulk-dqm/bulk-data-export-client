@@ -37,11 +37,11 @@ export const createExportReport = async (file: string, downloadDir: string) => {
       <ul>
         <li>Files: ${exportCompleteResults.eventDetail.files}</li>
         <li>Resources: ${exportCompleteResults.eventDetail.resources}</li>
-        <li> Total Duration: ${exportCompleteResults.eventDetail.duration} seconds</li>
-          <li> Export Duration: ${statusCompleteResults.eventDetail.duration} seconds</li>
-          <li> Download Duration: ${(
+        <li> Total Duration: ${exportCompleteResults.eventDetail.duration} milliseconds</li>
+          <li> Export Duration: ${statusCompleteResults.eventDetail.duration} milliseconds</li>
+          <li> Download Duration: ${
             exportCompleteResults.eventDetail.duration - statusCompleteResults.eventDetail.duration
-          ).toFixed(2)} seconds</li>
+          } milliseconds</li>
       </ul>
       </p>
       <h2>Created Files:</h2>
