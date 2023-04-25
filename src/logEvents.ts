@@ -48,6 +48,7 @@ export const setLoggingEvents = (logger: any, client: any) => {
         outputFileCount: manifest.output.length,
         deletedFileCount: manifest.deleted?.length || 0,
         errorFileCount: manifest.error?.length || 0,
+        duration: Date.now() - startTime,
       },
     });
   });

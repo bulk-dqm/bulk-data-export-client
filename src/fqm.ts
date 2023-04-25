@@ -20,6 +20,7 @@ export const calculateMeasureReports = async (
   patientBundle: fhir4.Bundle[],
   options: CalculatorTypes.CalculationOptions = {}
 ) => {
+  console.log('Generating summary measure report...');
   return await Calculator.calculateMeasureReports(measureBundle, patientBundle, options);
 };
 
