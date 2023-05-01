@@ -45,18 +45,16 @@ export const retrieveTypeFromMeasureBundle = async (
 };
 
 /**
- * Constructs the _type parameter used in a bulk data export request by parsing the 
+ * Constructs the _type parameter used in a bulk data export request by parsing the
  * data requirements for the measure bundle.
  * @param dataRequirements data requirements retrieved from measure bundle
  */
-export const constructTypeQueryFromRequirements = (
-  dataRequirements: fhir4.DataRequirement[]
-) => {
+export const constructTypeQueryFromRequirements = (dataRequirements: fhir4.DataRequirement[]) => {
   const queries: DataRequirementsQuery[] = [];
 
-  dataRequirements.forEach(dr => {
+  dataRequirements.forEach((dr) => {
     if (dr.type) {
-      const q: DataRequirementsQuery = { endpoint: dr.type, params: {}};
+      const q: DataRequirementsQuery = { endpoint: dr.type, params: {} };
       if (dr.codeFilter?.[0]?.code?.[0].code) {
         const key = dr.codeFilter?.[0].path;
         key && (q.params[key] = dr.codeFilter[0].code[0].code);

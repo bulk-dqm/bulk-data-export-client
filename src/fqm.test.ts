@@ -1,4 +1,11 @@
-import { calculateMeasureReports, loadBundleFromFile, CalculatorTypes, constructTypeQueryFromRequirements } from './fqm';
+import {
+  calculateMeasureReports,
+  loadBundleFromFile,
+  CalculatorTypes,
+  constructTypeQueryFromRequirements,
+  retrieveTypeFromMeasureBundle,
+} from './fqm';
+import { Calculator } from 'fqm-execution';
 
 describe('loadBundleFromFile', () => {
   describe('given a Measure file that exists', () => {
@@ -73,9 +80,33 @@ describe('calculateMeasureReports', () => {
   });
 });
 
+describe('retrieveTypeFromMeasureBundle', () => {
+  test('throws error for empty data requirements', async () => {
+    const measureBundle = await loadBundleFromFile('src/__fixtures__/proportion-boolean-bundle.json');
+    const drSpy = jest.spyOn(Calculator, 'calculateDataRequirements').mockImplementation(async () => {
+      return {
+        results: {
+          resourceType: 'Library',
+          type: {
+            coding: [{ code: 'module-definition', system: 'http://terminology.hl7.org/CodeSystem/library-type' }],
+          },
+          status: 'draft',
+        },
+      };
+    });
+
+    try {
+      await retrieveTypeFromMeasureBundle(measureBundle);
+    } catch (e) {
+      if (e instanceof Error)
+        expect(e.message).toEqual('Data requirements array is not defined for the Library. Aborting $export request.');
+    }
+    expect(drSpy.mock.calls.length).toBe(1);
+  });
+});
 describe('constructTypeQueryFromRequirements', () => {
   test('generates _type query for a single resource type', () => {
-    expect(constructTypeQueryFromRequirements([{type: 'Patient'}])).toEqual('Patient');
+    expect(constructTypeQueryFromRequirements([{ type: 'Patient' }])).toEqual('Patient');
   });
 
   test('generates _type query for multiple resource types', () => {
@@ -85,19 +116,19 @@ describe('constructTypeQueryFromRequirements', () => {
         codeFilter: [
           {
             path: 'type',
-            valueSet: 'TEST_VALUE_SET'
-          }
-        ]
+            valueSet: 'TEST_VALUE_SET',
+          },
+        ],
       },
       {
         type: 'Encounter',
         codeFilter: [
           {
             path: 'code',
-            valueSet: 'TEST_VALUE_SET'
-          }
-        ]
-      }
+            valueSet: 'TEST_VALUE_SET',
+          },
+        ],
+      },
     ];
     expect(constructTypeQueryFromRequirements(MULTIPLE_DR)).toEqual('Procedure,Encounter');
   });
