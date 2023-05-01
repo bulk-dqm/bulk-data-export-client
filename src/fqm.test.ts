@@ -1,4 +1,4 @@
-import { calculateMeasureReports, loadBundleFromFile, CalculatorTypes } from './fqm';
+import { calculateMeasureReports, loadBundleFromFile, CalculatorTypes, constructTypeQueryFromRequirements } from './fqm';
 
 describe('loadBundleFromFile', () => {
   describe('given a Measure file that exists', () => {
@@ -70,5 +70,35 @@ describe('calculateMeasureReports', () => {
     } else {
       fail('MeasureReport for IPP was not found');
     }
+  });
+});
+
+describe('constructTypeQueryFromRequirements', () => {
+  test('generates _type query for a single resource type', () => {
+    expect(constructTypeQueryFromRequirements([{type: 'Patient'}])).toEqual('Patient');
+  });
+
+  test('generates _type query for multiple resource types', () => {
+    const MULTIPLE_DR: fhir4.DataRequirement[] = [
+      {
+        type: 'Procedure',
+        codeFilter: [
+          {
+            path: 'type',
+            valueSet: 'TEST_VALUE_SET'
+          }
+        ]
+      },
+      {
+        type: 'Encounter',
+        codeFilter: [
+          {
+            path: 'code',
+            valueSet: 'TEST_VALUE_SET'
+          }
+        ]
+      }
+    ];
+    expect(constructTypeQueryFromRequirements(MULTIPLE_DR)).toEqual('Procedure,Encounter');
   });
 });
