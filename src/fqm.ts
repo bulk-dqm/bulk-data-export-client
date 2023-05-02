@@ -1,6 +1,5 @@
 import { readFile, readdir } from 'fs/promises';
 import { Calculator, CalculatorTypes } from 'fqm-execution';
-import { DataRequirementsQuery } from './types/DataRequirementsQuery';
 import * as path from 'path';
 
 export const loadBundleFromFile = async (filename: string): Promise<fhir4.Bundle> => {
@@ -50,26 +49,18 @@ export const retrieveTypeFromMeasureBundle = async (
  * @param dataRequirements data requirements retrieved from measure bundle
  */
 export const constructTypeQueryFromRequirements = (dataRequirements: fhir4.DataRequirement[]) => {
-  const queries: DataRequirementsQuery[] = [];
+  const types: string[] = [];
 
   dataRequirements.forEach((dr) => {
     if (dr.type) {
-      const q: DataRequirementsQuery = { endpoint: dr.type, params: {} };
-      if (dr.codeFilter?.[0]?.code?.[0].code) {
-        const key = dr.codeFilter?.[0].path;
-        key && (q.params[key] = dr.codeFilter[0].code[0].code);
-      } else if (dr.codeFilter?.[0]?.valueSet) {
-        const key = `${dr?.codeFilter?.[0].path}:in`;
-        key && (q.params[key] = dr.codeFilter[0].valueSet);
-      }
-      queries.push(q);
+      types.push(dr.type);
     }
   });
 
   // reduce queries to keep unique types
-  const uniqueTypes = queries.reduce((acc: string[], e) => {
-    if (!acc.includes(e.endpoint)) {
-      acc.push(e.endpoint);
+  const uniqueTypes = types.reduce((acc: string[], type) => {
+    if (!acc.includes(type)) {
+      acc.push(type);
     }
     return acc;
   }, []);
