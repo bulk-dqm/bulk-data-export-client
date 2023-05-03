@@ -73,7 +73,7 @@ program
   )
   .option(
     '-a, --auto-populate-type',
-    'Automatically populates _type using data requirements from the measure bundle. Requires a measure bundle path to be supplied.'
+    'Automatically populates _type using data requirements from the measure bundle. Requires a measure bundle path to be supplied. Overrides any input provided by the --_type flag.'
   )
   .option('--config <path>', 'Relative path to a config file. Otherwise uses default options.')
   .parseAsync(process.argv);
@@ -142,7 +142,6 @@ const executeExport = async () => {
   await checkDestinationExists(options.destination);
 
   if (options.autoPopulateType) {
-    console.log('in fn');
     if (!options.measureBundle) {
       console.log(
         '--auto-populate-type supplied without a measure bundle. Measure bundle path must be supplied with the -m/--measure-bundle flag in order to automatically populate the _type parameter.'

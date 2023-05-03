@@ -104,6 +104,7 @@ describe('retrieveTypeFromMeasureBundle', () => {
     expect(drSpy.mock.calls.length).toBe(1);
   });
 });
+
 describe('constructTypeQueryFromRequirements', () => {
   test('generates _type query for a single resource type', () => {
     expect(constructTypeQueryFromRequirements([{ type: 'Patient' }])).toEqual('Patient');
