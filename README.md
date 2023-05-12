@@ -16,6 +16,7 @@ CLI application for FHIR Bulk Data Export and FHIR-based quality measure calcula
   - [Prerequisites](#prerequisites)
   - [Local Installation](#local-installation)
   - [Local Usage](#local-usage)
+- [Running the Client via the CLI](#running-the-client-via-the-cli)
 - [Quickstart Guide](#quickstart-guide)
   - [CLI Options](#cli-options)
   - [Three-Step Workflow](#three-step-workflow)
@@ -59,6 +60,55 @@ Or using the built JavaScript:
 npm run build
 node build/cli.js [options]
 ```
+
+## Running the Client via the CLI
+The following steps outline the end-to-end workflow for sending a bulk-data export request to a bulk-data server:
+
+**1. Specify configuration options**
+
+There are two ways to specify configuration options:
+- using CLI flags (if defined)
+- by specifying the configuration values in a configuration file
+
+To use values from a configuration file, use the `--config` CLI flag to specify the relative path of the desired configuration file to use. 
+
+See [configuration-options] for an overview of all supported options.
+See [cli-options] for an overview of all supported CLI options.
+
+**2. Run the CLI**
+
+The user can run the application end-to-end or run a subset of steps. To see which CLI options are required at each step, see [three-step-workflow]. For this example, we will assume we want to run the end-to-end workflow (i.e. run all three steps).
+
+To run the application end-to-end, we must specify a valid FHIR url, a group id that corresponds to a FHIR Group resource on the server, and a path to a measure bundle that will be used for measure calculation.
+
+Let's assume the FHIR url we want to use for export is `http://my-fhir-server`, the group we are interested in exporting data for has id `my-group`, and the path to our measure bundle is `path/to/my-measure-bundle`. One way to specify our command using the CLI is:
+
+```bash
+npm run cli -- -f http://my-fhir-server -g my-group -m path/to/my-measure-bundle
+```
+
+After running the command, the export kick-off will start. You should receive the following messages from the CLI:
+```bash
+Kick-off started
+Kick-off completed
+Bulk Data export started
+Bulk Data export completed in XX seconds
+```
+
+**3. Access downloaded NDJSON files and export report**
+When the downloads have completed, the CLI will output the following:
+
+![Screenshot of Download Progress from CLI](./docs/cli-download.png)
+
+Once completed, the user has access to many different outputs. These include:
+- **the downloaded NDJSON files** - available in the specified downloads directory (defaults to `./downloads`)
+- **FHIR patient bundles constructed from the downloaded NDJSON** - available in the specified bundles directory (defaults to `./patientBundles`)
+- **JSON measure calculation results** - either logged to the console or to a specified output file
+- **export logs** - contained in a specified log file (defaults to `log.ndjson` within the downloads directory)
+- **HTML export report** - report containing information on export/download duration, number of polling requests, and downloaded resources. Available in the same directory where the log file is stored
+
+
+
 
 ## Quickstart Guide
 
