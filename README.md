@@ -17,9 +17,10 @@ CLI application for FHIR Bulk Data Export and FHIR-based quality measure calcula
   - [Local Installation](#local-installation)
   - [Local Usage](#local-usage)
 - [Running the Client via the CLI](#running-the-client-via-the-cli)
-- [Quickstart Guide](#quickstart-guide)
+- [Configuration](#configuration)
+  - [Creating a Custom Configuration File](#creating-a-custom-configuration-file)
   - [CLI Options](#cli-options)
-  - [Three-Step Workflow](#three-step-workflow)
+- [Three-Step Workflow](#three-step-workflow)
 - [API Reference](#api-reference)
 - [License](#license)
 
@@ -110,9 +111,14 @@ Once completed, the user has access to many different outputs. These include:
 
 
 
-## Quickstart Guide
+## Configuration
+
+**TODO: add details about working with config file**
+
+### Creating a Custom Configuration File
 
 ### CLI Options
+
 The supported options for making a request to a FHIR server are as follows:
 
 ```bash
@@ -135,16 +141,14 @@ The supported options for making a request to a FHIR server are as follows:
 --config <path> Relative path to a config file. Otherwise uses default options.
 ```
 
-### Three-Step Workflow
+## Three-Step Workflow
 The CLI logic can be categorized into three main processes:
 
-<ol>
-  <li>Execute bulk data $export by interacting with a FHIR server. The exported NDJSON files are downloaded to the specified download directory.</li>
-  <li>Create FHIR patient bundles from the exported NDJSON. The FHIR patient bundles are saved to the specified patient bundles directory.</li>
-  <li>Run measure calculation on the FHIR patient bundles using the fqm-execution measure calculation library</li>
-</ol>
+1. Execute bulk data $export by interacting with a FHIR server. The exported NDJSON files are downloaded to the specified download directory.
+2. Create FHIR patient bundles from the exported NDJSON. The FHIR patient bundles are saved to the specified patient bundles directory.
+3. Run measure calculation on the FHIR patient bundles using the fqm-execution measure calculation library
 
-The user can run the application end-to-end or run a subset of these steps. To run a subset of the steps, follow the CLI configuration options below.
+The user can run the application end-to-end or run a subset of these steps. To run a subset of the steps, follow the CLI configuration options below. While it does not take a lot of time to run the application end-to-end on a small number of patients, the amount of time needed to run the application greatly increases depending on the number of patients contained in the FHIR group and the server's implementation of bulk export.
 
 #### Running Step 1 Only
 Required CLI flags:
@@ -167,7 +171,7 @@ Required CLI flags:
 -b, --patient-bundles <patient-bundles>
 -m, --measure-bundle <measure-bundle>
 ```
-This uses the FHIR patient bundles from the patient bundles directory along with the specified measure bundle to perform measure calculation with the [fqm-execution measure calculation library](https://github.com/projecttacoma/fqm-execution).
+This uses the FHIR patient bundles from the patient bundles directory along with the specified measure bundle to perform measure calculation with the [fqm-execution measure calculation library](https://github.com/projecttacoma/fqm-execution). Produces a summary measure report on all the patient bundles that are available.
 
 #### Running Steps 1 and 2
 Required CLI flags:
@@ -176,7 +180,7 @@ Required CLI flags:
 -g, --group-id <id>
 -b, --patient-bundles <patient-bundles>
 ```
-The `-m` flag should not be provided, as it triggers Step 3.
+The `-m` flag should not be provided, as it triggers Step 3 to be executed.
 
 #### Running Steps 2 and 3
 Required CLI flags:
@@ -192,11 +196,11 @@ Required CLI flags:
 -g, --group-id <id>
 -m, --measure-bundle <measure-bundle>
 ```
-The `-d` and `-b` flags may also be provideed to specify storage directories. If not provided, the end-to-end workflow will use the default directory paths.
+The `-d` and `-b` flags may also be provided to specify storage directories. If not provided, the end-to-end workflow will use the default directory paths.
 
 ## License
 
-Copyright 2022 The MITRE Corporation
+Copyright 2022-2023 The MITRE Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
 
