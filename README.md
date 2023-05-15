@@ -111,7 +111,7 @@ Once completed, the user has access to many different outputs. These include:
 - **export logs** - contained in a specified log file (defaults to `log.ndjson` within the downloads directory)
 - **HTML export report** - report containing information on export/download duration, number of polling requests, and downloaded resources. Available in the same directory where the log file is stored
 
-
+Note: Bulk data requests are *not* incremental. The API collects all requested data for the requested group before returning any data.
 
 
 ## Configuration
@@ -213,6 +213,8 @@ SMART on FHIR is an open-source standards-based API. Their bulk-data client is u
 
 `bulk-data-client` is available on [GitHub](https://github.com/smart-on-fhir/bulk-data-client).
 
+## API Reference
+See [the API Reference](/docs/api-reference)
 
 ## License
 
