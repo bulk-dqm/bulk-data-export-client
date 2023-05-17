@@ -25,6 +25,7 @@ CLI application for FHIR Bulk Data Export and FHIR-based quality measure calcula
   - [FHIR Quality Measure (FQM) Execution](#fhir-quality-measure-fqm-execution)
   - [SMART on FHIR Bulk Data Client](#smart-on-fhir-bulk-data-client)
 - [API Reference](#api-reference)
+- [Documentation Resources](#documentation-resources)
 - [License](#license)
 
 ## Introduction
@@ -213,8 +214,18 @@ SMART on FHIR is an open-source standards-based API. Their bulk-data client is u
 
 `bulk-data-client` is available on [GitHub](https://github.com/smart-on-fhir/bulk-data-client).
 
+### @types/fhir
+`bulk-data-export-client` uses the `@types/fhir` package for FHIR type definitions. 
+
+`@types/fhir` is available on [npm](https://www.npmjs.com/package/@types/fhir).
+
 ## API Reference
 See [the API Reference](/docs/api-reference)
+
+## Documentation Resources
+For more information on the FHIR Bulk Export specifications, refer to the following resources:
+- [FHIR Bulk Data Export - Bulk Data Access IG](https://hl7.org/fhir/uv/bulkdata/export/index.html)
+- [fqm-execution Documentation](https://projecttacoma.github.io/fqm-execution/#/)
 
 ## License
 

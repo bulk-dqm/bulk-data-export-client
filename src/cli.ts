@@ -204,7 +204,7 @@ const main = async (options: NormalizedOptions) => {
   validateInputs(program.opts());
 
   if (options.privateKey) {
-    program.opts().privateKey = await resolveJWK(options.privateKey);
+    options.privateKey = await resolveJWK(options.privateKey);
   }
 
   // execute "Step 1": bulk data export
