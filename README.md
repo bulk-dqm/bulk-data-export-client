@@ -117,9 +117,53 @@ Note: Bulk data requests are *not* incremental. The API collects all requested d
 
 ## Configuration
 
-**TODO: add details about working with config file**
+Configuration options can be set using a configuration file and/or specifying option values via the CLI. When running the client, the configuration options are read as folllows:
+1. Each configuration option takes on a default value, set by the default configuration file `config/defaults.js`.
+2. If a custom configuration file is specified via the `--config` CLI flag, all configuration options specified in the file will overwrite the default values.
+3. Any CLI parameters that are specified will overwrite the configuration option values set either by the default file or the custom configuration file. Therefore, CLI flags take precedent over all other methods.
 
 ### Creating a Custom Configuration File
+To create a custom configuration file to set configuration options, create a copy of the default configuration file in `config/defaults.js` and change the values as desired.
+
+The configuration options are as follows:
+
+| Param         | Type     | Description                                                               |
+| ------------- | -------- | ------------------------------------------------------------------------- |
+| fhirUrl | string | FHIR server base URL. |
+| measureBundle | string | Path to a FHIR measure bundle. |
+| patientBundles | string | Directory containing patient bundles. |
+| tokenUrl | string | The Bulk Data server token URL ("none" for open servers) |
+| privateKey | string | The private key used to sign authentication tokens. |
+| clientId | string | The client ID |
+| scope | string | The scope to use in the authorization request. |
+| accessTokenLifetime | number | The access token lifetime in seconds. |
+| reporter | string | Reporter to use to render the output. |
+| _outputFormat | string | The value of the `_outputFormat` parameter for Bulk Data kick-off requests. |
+| _since | string | The value of the `_since` parameter for Bulk Data kick-off requests. |
+| _type | string | The value of the `_type` parameter for Bulk Data kick-off requests. |
+| _elements | string | The value of the `_elements` parameter for Bulk Data kick-off requests. |
+| patient | string | The value of the `patient` parameter for Bulk Data kick-off requests. |
+| includeAssociatedData | string | The value of the `includeAssociatedData` parameter for Bulk Data kick-off requests. |
+| _typeFilter | string | The value of the `_typeFilter` parameter for Bulk Data kick-off requests. |
+| group | string | Id of FHIR group to export. |
+| lenient | boolean | If true, adds `handling=lenient` to the `prefer` request header. This may enable a "retry" option after certain errors. |
+| requests | object | Custom options for every request, excluding the authorization request and any updload requests. |
+| parallelDownloads | number | How many downloads to run in parallel. |
+| saveManifest | boolean | Specifies whether to save the export manifest. |
+| ndjsonMaxLineLength | number | Maximum line length for NDJSON files. |
+| ndjsonValidateFHIRResourceType | boolean | If `true`, verifies that every single JSON object extracted for the NDJSON file has a `resourceType` property, and that this property equals the expected `type` reported in the export manifest. |
+| addDestinationToManifest | boolean | Specifies whether to add a `destination` property to each file containing the path (relative to the manifest file) to the saved file. |
+| forceStandardFileNames | boolean | Specifies whether to rename files to match the standard naming convention `{fileNumber}.{ResourceType}.ndjson`.
+| downloadAttachments | boolean | Specifies whethr to download external attachments found in `DocumentReference` resources. |
+| inlineDocRefAttachmentsSmallerThan | number | In `DocumentReference` resources, any `attachment` elements having a `url` (instead of inline data) and a `size` below this number will be downloaded and put inline as base64 `data`. |
+| inlineDocRefAttachmentTypes | string[] | Only files of listed types will be inlined and the rest will be downloaded into "attachment" subfolder. |
+| pdfToText | boolean | Specifies whether attachments of type PDF that are being inlined will first be converted to text and then inlined as base64. |
+| destination | string | Path to download destination. |
+| awsRegion | string | AWS Region (only used if `destination` points to S3). |
+| awsAccessKeyId | string | AWS Access Key ID (only used if `destination` points to S3). |
+| awsSecretAccessKey | string | AWS Secret Access Key (onlt needed if `destination` points to S3). |
+| logFile | string | Path to a log file to write logs to. |
+| outputPath | string | Path to an output file for generated FHIR `MeasureReport`s. |
 
 ### CLI Options
 
