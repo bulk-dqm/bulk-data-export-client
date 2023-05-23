@@ -25,6 +25,7 @@ CLI application for FHIR Bulk Data Export and FHIR-based quality measure calcula
   - [FHIR Quality Measure (FQM) Execution](#fhir-quality-measure-fqm-execution)
   - [SMART on FHIR Bulk Data Client](#smart-on-fhir-bulk-data-client)
 - [API Reference](#api-reference)
+- [Advanced Topics](#advanced-topics)
 - [Documentation Resources](#documentation-resources)
 - [License](#license)
 
@@ -161,7 +162,7 @@ The configuration options are as follows:
 | destination | string | Path to download destination. |
 | awsRegion | string | AWS Region (only used if `destination` points to S3). |
 | awsAccessKeyId | string | AWS Access Key ID (only used if `destination` points to S3). |
-| awsSecretAccessKey | string | AWS Secret Access Key (onlt needed if `destination` points to S3). |
+| awsSecretAccessKey | string | AWS Secret Access Key (only needed if `destination` points to S3). |
 | logFile | string | Path to a log file to write logs to. |
 | outputPath | string | Path to an output file for generated FHIR `MeasureReport`s. |
 
@@ -265,6 +266,9 @@ SMART on FHIR is an open-source standards-based API. Their bulk-data client is u
 
 ## API Reference
 See [the API Reference](/docs/api-reference)
+
+## Advanced Topics
+See [Advanced Topics](/docs/advanced-topics)
 
 ## Documentation Resources
 For more information on the FHIR Bulk Export specifications, refer to the following resources:
