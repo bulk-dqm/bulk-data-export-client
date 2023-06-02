@@ -15,7 +15,12 @@ import { createExportReport } from './reportGenerator';
 import { assemblePatientBundle, getNDJSONFromDir } from './ndjsonToBundle';
 import { writeFile } from 'fs';
 import { CalculatorTypes } from 'fqm-execution';
-import { calculateMeasureReports, loadBundleFromFile, loadPatientBundlesFromDir } from './fqm';
+import {
+  calculateMeasureReports,
+  loadBundleFromFile,
+  loadPatientBundlesFromDir,
+  retrieveTypeFromMeasureBundle,
+} from './fqm';
 import { setLoggingEvents } from './logEvents';
 
 interface NormalizedOptions extends Omit<Types.NormalizedOptions, 'privateKey'> {
@@ -24,6 +29,7 @@ interface NormalizedOptions extends Omit<Types.NormalizedOptions, 'privateKey'> 
   measureBundle: string;
   patientBundles: string;
   privateKey: any;
+  autoPopulateType: boolean;
 }
 
 const program = new Command();
@@ -64,6 +70,10 @@ program
   .option(
     '-q, --_typeFilter <string>',
     'Experimental _typeFilter parameter. Represents a string of comma delimited FHIR REST queries.'
+  )
+  .option(
+    '-a, --auto-populate-type',
+    'Automatically populates _type using data requirements from the measure bundle. Requires a measure bundle path to be supplied. Overrides any input provided by the --_type flag.'
   )
   .option('--config <path>', 'Relative path to a config file. Otherwise uses default options.')
   .parseAsync(process.argv);
@@ -130,6 +140,19 @@ const checkDestinationExists = async (destination: string) => {
 const executeExport = async () => {
   if (!options.destination) options.destination = `${process.cwd()}/downloads`;
   await checkDestinationExists(options.destination);
+
+  if (options.autoPopulateType) {
+    if (!options.measureBundle) {
+      console.log(
+        '--auto-populate-type supplied without a measure bundle. Measure bundle path must be supplied with the -m/--measure-bundle flag in order to automatically populate the _type parameter.'
+      );
+      program.help();
+    }
+    const mb = await loadBundleFromFile(options.measureBundle);
+    // override current value of _type with query from data requirements
+    options._type = await retrieveTypeFromMeasureBundle(mb);
+  }
+
   const client = new BulkDataClient(options as NormalizedOptions);
   if (options.reporter === 'text') {
     TextReporter(client);
