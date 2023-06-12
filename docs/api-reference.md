@@ -2,7 +2,7 @@
 ## CLI
 
 ### validateInputs
-If one of Token URL, Client ID, or Private Key are provided, checks that all three options are defined. If at keast one of the inputs is missing, throws an error.
+If one of Token URL, Client ID, or Private Key are provided, checks that all three options are defined. If at least one of the inputs is missing, throws an error.
 
 | Param         | Type     | Description                                                               |
 | ------------- | -------- | ------------------------------------------------------------------------- |
@@ -19,7 +19,7 @@ Checks if the specified downloads directory exists. If not, prompts the user to 
 
 ### executeExport
 Completes "Step 1" of the pipeline.
-Kicks off bulk data `$export` operation, saves downloaded ndjson to the directory specified by the CLI options (`-d` flag), and generates HTML export report.
+Kicks off Bulk Data `$export` operation, saves downloaded ndjson to the directory specified by the CLI options (`-d` flag), and generates HTML export report.
 
 | Param         | Type     | Description                                                               |
 | ------------- | -------- | ------------------------------------------------------------------------- |

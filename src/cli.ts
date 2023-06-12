@@ -90,7 +90,7 @@ if (options.fhirUrl) {
 }
 
 /**
- * If one of Token URL, Client ID, or Private Key are provided, checks that all three options are defined. If at keast one of the inputs is missing, throws an error.
+ * If one of Token URL, Client ID, or Private Key are provided, checks that all three options are defined. If at least one of the inputs is missing, throws an error.
  * @param opts Record of option values from Commander program
  */
 const validateInputs = (opts: OptionValues) => {

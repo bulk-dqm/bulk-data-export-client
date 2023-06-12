@@ -30,9 +30,9 @@ CLI application for FHIR Bulk Data Export and FHIR-based quality measure calcula
 - [License](#license)
 
 ## Introduction
-`bulk-data-export-client` is a reference implementation of a FHIR client that requests a bulk-data export from a server, receives status information regarding processing the requested files, and downloads the retrieved files. The capabilities of the client are restricted to Group-level data export.
+`bulk-data-export-client` is a prototype implementation of a FHIR client that requests a Bulk Data Export from a server, receives status information regarding processing the requested files, and downloads the retrieved files. The capabilities of the client are restricted to Group-level data export.
 
-Optionally, the client can perform calculation on FHIR-based Electronic Clinical Quality Measures (eCQMs) written in Clinical Quality Language (CQL) using the retrieved data from a successful bulk-data export operation. For more information on measure calculation, see the [fqm-execution](https://github.com/projecttacoma/fqm-execution) calculation library.
+Optionally, the client can perform calculation on FHIR-based Electronic Clinical Quality Measures (eCQMs) written in Clinical Quality Language (CQL) using the retrieved data from a successful Bulk Data Export. For more information on measure calculation, see the [fqm-execution](https://github.com/projecttacoma/fqm-execution) calculation library.
 
 ## Installation
 
@@ -68,26 +68,26 @@ node build/cli.js [options]
 ```
 
 ## Running the Client via the CLI
-The following steps outline the end-to-end workflow for sending a bulk-data export request to a bulk-data server:
+The following steps outline the end-to-end workflow for sending a Bulk Data Export request to a bulk-data server:
 
 **1. Specify configuration options**
 
 There are two ways to specify configuration options:
 - using CLI flags (if defined)
-- by specifying the configuration values in a configuration file
+- using a configuration file
 
 To use values from a configuration file, use the `--config` CLI flag to specify the relative path of the desired configuration file to use. 
 
-See [configuration-options] for an overview of all supported options.
-See [cli-options] for an overview of all supported CLI options.
+See [Creating a Custom Configuration File](#creating-a-custom-configuration-file) for an overview of all supported options.
+See [CLI Options](#cli-options) for an overview of all supported CLI options.
 
 **2. Run the CLI**
 
-The user can run the application end-to-end or run a subset of steps. To see which CLI options are required at each step, see [three-step-workflow]. For this example, we will assume we want to run the end-to-end workflow (i.e. run all three steps).
+The user can run the application end to end or run a subset of steps. To see which CLI options are required at each step, see [three-step-workflow]. For this example, we will assume we want to run the end-to-end workflow (i.e. run all three steps).
 
-To run the application end-to-end, we must specify a valid FHIR url, a group id that corresponds to a FHIR Group resource on the server, and a path to a measure bundle that will be used for measure calculation.
+To run the application end to end, we must specify a valid FHIR URL, a group id that corresponds to a FHIR Group resource on the server, and a path to a measure bundle that will be used for measure calculation.
 
-Let's assume the FHIR url we want to use for export is `http://my-fhir-server`, the group we are interested in exporting data for has id `my-group`, and the path to our measure bundle is `path/to/my-measure-bundle`. One way to specify our command using the CLI is:
+Let's assume the FHIR URL we want to use for export is `http://my-fhir-server`, the group we are interested in exporting data for has id `my-group`, and the path to our measure bundle is `path/to/my-measure-bundle`. One way to specify our command using the CLI is:
 
 ```bash
 npm run cli -- -f http://my-fhir-server -g my-group -m path/to/my-measure-bundle
@@ -146,7 +146,7 @@ The configuration options are as follows:
 | patient | string | The value of the `patient` parameter for Bulk Data kick-off requests. |
 | includeAssociatedData | string | The value of the `includeAssociatedData` parameter for Bulk Data kick-off requests. |
 | _typeFilter | string | The value of the `_typeFilter` parameter for Bulk Data kick-off requests. |
-| group | string | Id of FHIR group to export. |
+| group | string | Id of FHIR Group to export. |
 | lenient | boolean | If true, adds `handling=lenient` to the `prefer` request header. This may enable a "retry" option after certain errors. |
 | requests | object | Custom options for every request, excluding the authorization request and any updload requests. |
 | parallelDownloads | number | How many downloads to run in parallel. |
@@ -164,7 +164,7 @@ The configuration options are as follows:
 | awsAccessKeyId | string | AWS Access Key ID (only used if `destination` points to S3). |
 | awsSecretAccessKey | string | AWS Secret Access Key (only needed if `destination` points to S3). |
 | logFile | string | Path to a log file to write logs to. |
-| outputPath | string | Path to an output file for generated FHIR `MeasureReport`s. |
+| outputPath | string | Path to an output file for generated FHIR MeasureReports. |
 
 ### CLI Options
 
@@ -193,11 +193,11 @@ The supported options for making a request to a FHIR server are as follows:
 ## Three-Step Workflow
 The CLI logic can be categorized into three main processes:
 
-1. Execute bulk data $export by interacting with a FHIR server. The exported NDJSON files are downloaded to the specified download directory.
+1. Execute Bulk Data $export by interacting with a FHIR server. The exported NDJSON files are downloaded to the specified download directory.
 2. Create FHIR patient bundles from the exported NDJSON. The FHIR patient bundles are saved to the specified patient bundles directory.
 3. Run measure calculation on the FHIR patient bundles using the fqm-execution measure calculation library
 
-The user can run the application end-to-end or run a subset of these steps. To run a subset of the steps, follow the CLI configuration options below. While it does not take a lot of time to run the application end-to-end on a small number of patients, the amount of time needed to run the application greatly increases depending on the number of patients contained in the FHIR group and the server's implementation of bulk export.
+The user can run the application end to end or run a subset of these steps. To run a subset of the steps, follow the CLI configuration options below. While it does not take a lot of time to run the application end to end on a small number of patients, the amount of time needed to run the application greatly increases depending on the number of patients contained in the FHIR group and the server's implementation of Bulk Data Export.
 
 #### Running Step 1 Only
 Required CLI flags:
@@ -250,12 +250,12 @@ The `-d` and `-b` flags may also be provided to specify storage directories. If 
 ## Dependent Open-Source Libraries
 
 ### FHIR Quality Measure (FQM) Execution
-`fqm-execution` is a library for calculating eCQMs witten in CQL using the HL7® FHIR® standard. The library is used to generate a FHIR summary [Measure Report](https://www.hl7.org/fhir/measurereport.html) on the patients referenced in the FHIR group used for export.
+`fqm-execution` is a library for calculating eCQMs witten in CQL using the HL7® FHIR® standard. The library is used to generate a FHIR summary [MeasureReport](https://www.hl7.org/fhir/measurereport.html) on the patients referenced in the FHIR Group used for export.
 
 `fqm-execution` is available on [npm](https://www.npmjs.com/package/fqm-execution) and [GitHub](https://github.com/projecttacoma/fqm-execution).
 
 ### SMART on FHIR Bulk Data Client
-SMART on FHIR is an open-source standards-based API. Their bulk-data client is used as a backbone for this client. Imported logic includes kick-off execution, download logic, and CLI reporting.
+The SMART on FHIR `bulk-data-client` open source application provides the core Bulk Data capabilities including kick-off execution, file download, and CLI reporting.
 
 `bulk-data-client` is available on [GitHub](https://github.com/smart-on-fhir/bulk-data-client).
 
@@ -265,13 +265,13 @@ SMART on FHIR is an open-source standards-based API. Their bulk-data client is u
 `@types/fhir` is available on [npm](https://www.npmjs.com/package/@types/fhir).
 
 ## API Reference
-See [the API Reference](/docs/api-reference)
+See [the API Reference](/docs/api-reference.md)
 
 ## Advanced Topics
-See [Advanced Topics](/docs/advanced-topics)
+See [Advanced Topics](/docs/advanced-topics.md)
 
 ## Documentation Resources
-For more information on the FHIR Bulk Export specifications, refer to the following resources:
+For more information on the FHIR Bulk Export and measure calculation, refer to the following resources:
 - [FHIR Bulk Data Export - Bulk Data Access IG](https://hl7.org/fhir/uv/bulkdata/export/index.html)
 - [fqm-execution Documentation](https://projecttacoma.github.io/fqm-execution/#/)
 
