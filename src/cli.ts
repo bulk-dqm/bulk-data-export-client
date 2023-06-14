@@ -99,6 +99,10 @@ if (options.fhirUrl) {
   options.fhirUrl = options.fhirUrl.replace(/\/*$/, '/');
 }
 
+/**
+ * If one of Token URL, Client ID, or Private Key are provided, checks that all three options are defined. If at least one of the inputs is missing, throws an error.
+ * @param opts Record of option values from Commander program
+ */
 const validateInputs = (opts: OptionValues) => {
   if (opts.tokenUrl || opts.clientId || opts.privateKey) {
     const missingInputs: string[] = [];
@@ -114,6 +118,10 @@ const validateInputs = (opts: OptionValues) => {
   }
 };
 
+/**
+ * Checks if the specified downloads directory exists. If not, prompts the user to specify whether a new directory should be created and written to.
+ * @param destination Download destination relative to current working directory
+ */
 const checkDestinationExists = async (destination: string) => {
   if (!fs.existsSync(destination)) {
     console.log(`Destination ${destination} does not exist.`);
@@ -135,7 +143,7 @@ const checkDestinationExists = async (destination: string) => {
 /**
  * Completes "Step 1" of the pipeline.
  * Kicks off bulk data $export operation, saves downloaded ndjson to the
- * directory specified by the CLI options (-g flag), and generates HTML export report.
+ * directory specified by the CLI options (-d flag), and generates HTML export report.
  */
 const executeExport = async () => {
   if (!options.destination) options.destination = `${process.cwd()}/downloads`;
@@ -219,7 +227,7 @@ const main = async (options: NormalizedOptions) => {
   validateInputs(program.opts());
 
   if (options.privateKey) {
-    program.opts().privateKey = await resolveJWK(options.privateKey);
+    options.privateKey = await resolveJWK(options.privateKey);
   }
 
   // execute "Step 1": bulk data export
