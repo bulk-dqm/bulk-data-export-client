@@ -11,3 +11,10 @@ The client uses the [FHIR Patient Compartment Definition](http://hl7.org/fhir/R4
 
 3. For each patient, constructs a FHIR Collection Bundle containing the FHIR Patient resource and all downloaded resources that reference the patient.
 4. Writes the collection bundles to the `patientBundles` directory or the user-specified patient bundles directory.
+
+## Automatic `--_type` Population
+The client can (optionally) automatically populate the `_type` parameter using a given FHIR Measure's data requirements.
+
+To automatically populate the `_type` parameter prior to sending a Bulk Data Export kick-off request using the CLI, the `--auto-populate-type` flag must be specified, and a measure bundle path must also be specified. When present, the data requirements output will override any input provided by the `--_type` flag.
+
+The client retrieves the data requirements for the given measure using the [fqm-execution](https://github.com/projecttacoma/fqm-execution) `calculateDataRequirements` API function, and then extracts the `type`s from each data requirement that gets returned from the API function.

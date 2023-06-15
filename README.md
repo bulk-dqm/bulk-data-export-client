@@ -265,6 +265,9 @@ The SMART on FHIR `bulk-data-client` open source application provides the core B
 
 `@types/fhir` is available on [npm](https://www.npmjs.com/package/@types/fhir).
 
+## Bulk Data Implementation
+For more information on the supported Bulk Data Export endpoints, the request flow, and authorization, see [the Bulk Data Implementation documentation](/docs/bulk-data.md).
+
 ## API Reference
 See [the API Reference](/docs/api-reference.md)
 
