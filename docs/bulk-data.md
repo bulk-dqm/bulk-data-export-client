@@ -12,9 +12,10 @@ There are several factors that could impact the time needed to complete a Bulk D
 
 ## Supported Bulk Data Export Client Parameters
 The following parameters are supported by the client:
+
 | Parameter         | Optional?    | Type |Description                                                               |
 | ------------- | -------- | ----| ------------------------------------------------------------------------- |
-| `_outputFormat` | yes | String | The format for the requeted bulk data files to be generated. |
+| `_outputFormat` | yes | String | The format for the requested bulk data files to be generated. |
 | `_since` | yes | FHIR instant | Resources will be included in the response if their state has changed after the supplied time. |
 | `_type` | yes | String | Comma-delimited string of FHIR resoure types to be included in the response. |
 | `_typeFilter` | yes | String | Comma-delimited string of FHIR REST queries. |
@@ -39,9 +40,25 @@ These configuration parameters do not need to be specified when connecting to an
 ## Request Flow
 
 ### Bulk Data Kick-off Request
+A bulk export request is kicked off for a specific group of patients using the following request format:
+
+```
+GET <Base URL>/Group/<Group id>/$export
+```
+
+The Group id must be specified as a configuration option (or specified via the CLI) at the time of kick-off. If request parameters are specified, they are appended to the request url.
+
+Once the kick-off is completed, the status endpoint is available.
 
 ### Bulk Data Status Request
+The client uses the URL returned from the `Content-Location` header from the kick-off request to check the job status.
+
+If a `200` status code is returned, the export is complete.
+If a `202` status code is returned, the export is still in progress. The elapsed time is reportedto the user's terminal.
 
 ### File Request
+After the export completes, download jobs are creaated to download all the exported resources from the returned file URLs.
+
+Each exported NDJSON file contains a single resource type. Multiple files for the same resource type may exist.
 
 For more details on the Bulk Data Export flow, consult the [HL7 Bulk Data specifications](https://hl7.org/fhir/uv/bulkdata/export/index.html).
