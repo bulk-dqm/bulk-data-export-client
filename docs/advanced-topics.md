@@ -21,3 +21,6 @@ The client retrieves the data requirements for the given measure using the [fqm-
 
 ## Measure Report Generation
 When a path to a measure bundle is specified, measure calculation is run against all the patients that are members of the FHIR Group used for Group Export. The client uses the [fqm-execution](https://github.com/projecttacoma/fqm-execution) `calculateMeasureReports` API function to generate a FHIR MeasureReport of type `summary` that contains a measure score across all the patients.
+
+## Export Report Generation
+Upon successful export and download, an HTML report is generated for the completed export requests. This report is generated in the downloads directory and contains data about the export like the URL, the number of polling requests, the number of downloaded files and resources, and the export and download durations.
