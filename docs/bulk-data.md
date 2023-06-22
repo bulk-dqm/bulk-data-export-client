@@ -54,7 +54,7 @@ Once the kick-off is completed, the status endpoint is available.
 The client uses the URL returned from the `Content-Location` header from the kick-off request to check the job status.
 
 If a `200` status code is returned, the export is complete.
-If a `202` status code is returned, the export is still in progress. The elapsed time is reportedto the user's terminal.
+If a `202` status code is returned, the export is still in progress. The elapsed time is reported to the user's terminal.
 
 ### File Request
 After the export completes, download jobs are creaated to download all the exported resources from the returned file URLs.
