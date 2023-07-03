@@ -25,7 +25,7 @@ CLI application for FHIR Bulk Data Export and FHIR-based quality measure calcula
   - [FHIR Quality Measure (FQM) Execution](#fhir-quality-measure-fqm-execution)
   - [SMART on FHIR Bulk Data Client](#smart-on-fhir-bulk-data-client)
 - [Bulk Data Implementation](#bulk-data-implementation)
-- [API Reference](#api-reference)
+- [Software Design](#software-design)
 - [Advanced Topics](#advanced-topics)
 - [Documentation Resources](#documentation-resources)
 - [License](#license)
@@ -269,8 +269,26 @@ The SMART on FHIR `bulk-data-client` open source application provides the core B
 ## Bulk Data Implementation
 For more information on the supported Bulk Data Export endpoints, the request flow, and authorization, see [the Bulk Data Implementation documentation](/docs/bulk-data.md).
 
-## API Reference
-See [the API Reference](/docs/api-reference.md)
+## Software Design
+The code repository is organized into the following directories:
+- Client configuration files (`config`)
+- Documentation (`docs`)
+- Source code (`src`)
+- Scripts for report and patient bundle generation (`scripts`)
+
+### Source Code Directory
+The source code is organized as follows:
+- `__fixtures__`: directory of fixtures for unit tests
+- `compartment-definition`: contains the JSON representation of the [FHIR Patient Compartment Definition](http://hl7.org/fhir/R4/compartmentdefinition-patient.json.html) and mapping of FHIR resource types to attribute paths for referencing FHIR Patients (used for patient bundle generation)
+- `types`: directory of custom types for patient bundle generation and export logs.
+- `cli.ts`: Runs the client CLI.
+- `fqm.ts`: Functions that call `fqm-execution` for measure report calculation and automatic `_type` population. See [Advanced Topics](/docs/advanced-topics.md) for more details.
+- `jwk.ts`: Resolves JWK as part of the authorization process.
+- `logEvents.ts`: Sets logging events for logging responses and status updates throughout the export process.
+- `ndjsonToBundle.ts`: Converts downloaded NDJSON content to FHIR Bundles for each patient in the requested FHIR Group.
+- `reportGenerator.ts`: Generates HTML report containing statistics from completed export.
+
+For more details, see [the API Reference](/docs/api-reference.md).
 
 ## Advanced Topics
 See [Advanced Topics](/docs/advanced-topics.md)

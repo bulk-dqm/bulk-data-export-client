@@ -1,6 +1,6 @@
 # API Reference
 ## CLI
-
+Runs the client CLI.
 ### validateInputs
 If one of Token URL, Client ID, or Private Key are provided, checks that all three options are defined. If at least one of the inputs is missing, throws an error.
 
@@ -44,6 +44,7 @@ Uses the FHIR patient bundles stored in the bundles directory (-b flag) and the 
 
 
 ## NDJSON to Bundle
+Converts downloaded NDJSON content to FHIR Bundles for each patient in the requested FHIR Group.
 
 ### getNDJSONFromDir
 Retrieves NDJSON content for a specified resource type from a given directory.
@@ -74,6 +75,7 @@ patient collection bundle from the filtered resources.
 | **Returns**   | `CollectionBundle`  | FHIR collection bundle for the given patient
 
 ## Report Generator
+Generates HTML report containing statistics from completed export.
 
 ### createExportReport
 Generates HTML export report from data collected throughout the `$export` operation. Includes export URL, number of polling requests, export and download duration, and the created file names.
