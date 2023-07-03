@@ -2,11 +2,21 @@ import { readFile, readdir } from 'fs/promises';
 import { Calculator, CalculatorTypes } from 'fqm-execution';
 import * as path from 'path';
 
+/**
+ * Asynchronously reads the contents of a given file containing a FHIR Bundle.
+ * @param filename file name
+ * @returns FHIR Bundle
+ */
 export const loadBundleFromFile = async (filename: string): Promise<fhir4.Bundle> => {
   const data = await readFile(path.join(process.cwd(), filename), 'utf8');
   return JSON.parse(data) as fhir4.Bundle;
 };
 
+/**
+ * Asynchronously reads the contents of a given directory containing FHIR Patient Bundles.
+ * @param path directory path
+ * @returns FHIR Patient Bundles
+ */
 export const loadPatientBundlesFromDir = async (path: string) => {
   const patientJSONs = await readdir(path);
   const patientBundles = patientJSONs.map(async (file) => {
@@ -15,6 +25,13 @@ export const loadPatientBundlesFromDir = async (path: string) => {
   return Promise.all(patientBundles);
 };
 
+/**
+ * Generates a summary FHIR Measure Report using the fqm-execution calculateMeasureReports function.
+ * @param measureBundle FHIR Measure Bundle
+ * @param patientBundle array of FHIR Patient Bundles
+ * @param options fqm-execution calculation options
+ * @returns MeasureReport resource summary according to standard https://www.hl7.org/fhir/measurereport.html
+ */
 export const calculateMeasureReports = async (
   measureBundle: fhir4.Bundle,
   patientBundle: fhir4.Bundle[],

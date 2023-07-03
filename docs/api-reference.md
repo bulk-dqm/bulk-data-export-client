@@ -42,6 +42,72 @@ Uses the FHIR patient bundles stored in the bundles directory (-b flag) and the 
 | ------------- | -------- | ------------------------------------------------------------------------- |
 | **Returns**   | `Promise<void>`  | &nbsp;                                                                    |
 
+## FHIR Quality Measure (FQM)
+
+### loadBundleFromFile
+Asynchronously reads the contents of a given file containing a FHIR Bundle.
+
+| Param         | Type     | Description                                                               |
+| ------------- | -------- | ------------------------------------------------------------------------- |
+| filename | `String` | File name |
+| **Returns**   | `Promise<fhir4.Bundle>`  | Parsed JSON as a FHIR Bundle
+
+### loadPatientBundlesFromDir
+Asynchronously reads the contents of a given directory containing FHIR Patient Bundles.
+
+| Param         | Type     | Description                                                               |
+| ------------- | -------- | ------------------------------------------------------------------------- |
+| path | `String` | Directory path |
+| **Returns**   | `Promise<Bundle<FhirResource>[]>`  | Array of parsed JSON as FHIR Bundles
+
+
+### calculateMeasureReports
+Generates a summary FHIR Measure Report using the [fqm-execution](https://github.com/projecttacoma/fqm-execution)`calculateMeasureReports` function.
+
+| Param         | Type     | Description                                                               |
+| ------------- | -------- | ------------------------------------------------------------------------- |
+| measureBundle | `fhir4.Bundle` | FHIR Measure Bundle |
+| patientBundle | `fhir4.Bundle[]` | Array of FHIR Patient Bundles |
+| options | `CalculatorTypes.CalculationOptions` | fqm-execution calculation options |
+| **Returns**   | `Promise<CalculatorTypes.MRCalculationOutput>`  | MeasureReport resource summary according to standard https://www.hl7.org/fhir/measurereport.html
+
+### retrieveTypeFromMeasureBundle
+Populates the _type parameter used in a bulk data export request. Retrieves the data requirements for the given measure bundle using the fqm-execution API function. Extracts the resource types from the data requirements. Throws error if data requirements are not defined on the results of the API function.
+
+| Param         | Type     | Description                                                               |
+| ------------- | -------- | ------------------------------------------------------------------------- |
+| measureBundle | `fhir4.Bundle` | FHIR Measure Bundle |
+| options | `CalculatorTypes.CalculationOptions` | fqm-execution calculation options |
+| **Returns**   | `Promise<string>`  | Comma-delimited string of resource types
+
+### constructTypeQueryFromRequirements
+Constructs the _type parameter used in a bulk data export request by parsing the
+data requirements for the measure bundle.
+
+| Param         | Type     | Description                                                               |
+| ------------- | -------- | ------------------------------------------------------------------------- |
+| dataRequirements | `fhir4.DataRequirement[]` | Data requirements retrieved from FHIR Measure Bundle |
+| **Returns**   | `Promise<string>`  | Comma-delimited string of resource types
+
+## JSON Web Key (JWK)
+
+### resolveJWK
+Resolves JWK as part of the authorization process.
+
+| Param         | Type     | Description                                                               |
+| ------------- | -------- | ------------------------------------------------------------------------- |
+| keyLocation | `string` | Path to file containing key |
+| **Returns**   | `Promise<jose.JWK.Key>`  | JWK Key
+
+## Log Events
+Sets logging events for logging responses and status updates throughout the export process.
+
+### setLoggingEvents
+| Param         | Type     | Description                                                               |
+| ------------- | -------- | ------------------------------------------------------------------------- |
+| logger | `any` | Client logger |
+| client | `any` | Client instance |
+| **Returns**   | `void`  | 
 
 ## NDJSON to Bundle
 Converts downloaded NDJSON content to FHIR Bundles for each patient in the requested FHIR Group.
