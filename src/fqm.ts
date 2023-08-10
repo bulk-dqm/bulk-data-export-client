@@ -61,6 +61,25 @@ export const retrieveTypeFromMeasureBundle = async (
 };
 
 /**
+ * Populates the _typeFilter parameter used in a bulk data export request. Retrieves the data
+ * requirements for the given measure bundle using the fqm-execution API function to use for
+ * _typeFilter query construction. Throws error if data requirements are not defined on the results
+ * of the API function.
+ * @param measureBundle FHIR measure bundle
+ * @param options fqm-execution calculation options
+ */
+export const retrieveTypeFilterFromMeasureBundle = async (
+  measureBundle: fhir4.Bundle,
+  options: CalculatorTypes.CalculationOptions = {}
+) => {
+  const dr = await Calculator.calculateDataRequirements(measureBundle, options);
+  if (!dr.results.dataRequirement) {
+    throw new Error('Data requirements array is not defined for the Library. Aborting $export request.');
+  }
+  return constructTypeFilterQueryFromRequirements(dr.results.dataRequirement);
+};
+
+/**
  * Constructs the _type parameter used in a bulk data export request by parsing the
  * data requirements for the measure bundle.
  * @param dataRequirements data requirements retrieved from measure bundle
@@ -84,6 +103,37 @@ export const constructTypeQueryFromRequirements = (dataRequirements: fhir4.DataR
 
   const formattedTypeParam = uniqueTypes.join(',');
   return formattedTypeParam;
+};
+
+/**
+ * Constructs the _typeFilter parameter used in a bulk data export request by parsing the
+ * data requirements from the measure bundle.
+ * @param dataRequirements data requirements retrieved from measure bundle
+ */
+export const constructTypeFilterQueryFromRequirements = (dataRequirements: fhir4.DataRequirement[]) => {
+  const queries: Record<string, string>[] = [];
+  dataRequirements.forEach((dr) => {
+    if (dr.type) {
+      const query: Record<string, string> = {};
+      if (dr?.codeFilter?.[0]?.code?.[0].code) {
+        const key = dr?.codeFilter?.[0].path;
+        key && (query[key] = dr.codeFilter[0].code[0].code);
+      } else if (dr?.codeFilter?.[0]?.valueSet) {
+        const key = `${dr?.codeFilter?.[0].path}:in`;
+        key && (query[key] = dr.codeFilter[0].valueSet);
+      }
+      queries.push(query);
+    }
+  });
+
+  const typeFilterQueries = queries.reduce((acc: string[], e) => {
+    if (Object.keys(e.params).length > 0) {
+      acc.push(`${e.endpoint}%3F${new URLSearchParams(e.params).toString()}`);
+    }
+    return acc;
+  }, []);
+  const typeFilterParam = typeFilterQueries.join(',');
+  return typeFilterParam;
 };
 
 export { CalculatorTypes } from 'fqm-execution';

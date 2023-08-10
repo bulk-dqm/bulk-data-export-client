@@ -33,6 +33,7 @@ interface NormalizedOptions extends Omit<Types.NormalizedOptions, 'privateKey'> 
   patientBundles: string;
   privateKey: any;
   autoPopulateType: boolean;
+  autoPopulateTypeFilter: boolean;
 }
 const program = new Command();
 
@@ -74,8 +75,12 @@ program
     'Experimental _typeFilter parameter. Represents a string of comma delimited FHIR REST queries.'
   )
   .option(
-    '-a, --auto-populate-type',
+    '--auto-populate-type',
     'Automatically populates _type using data requirements from the measure bundle. Requires a measure bundle path to be supplied. Overrides any input provided by the --_type flag.'
+  )
+  .option(
+    '--auto-populate-typeFilter',
+    'Automatically populates _typeFilter using data requirements from the measure bundle. Requires a measure bundle path to be supplied. Overrides any input provided by the --_typeFilter flag.'
   )
   .option('--config <path>', 'Relative path to a config file. Otherwise uses default options.')
   .option('--from <string>', 'Measurement period start date')
@@ -164,6 +169,18 @@ const executeExport = async () => {
     options._type = await retrieveTypeFromMeasureBundle(mb);
   }
 
+  if (options.autoPopulateTypeFilter) {
+    if (!options.measureBundle) {
+      console.log(
+        '--auto-populate-typeFilter supplied without a measure bundle. Measure bundle path must be supplied with the -m/--measure-bundle flag in order to automatically populate the _typeFilter parameter.'
+      );
+      program.help();
+    }
+    const mb = await loadBundleFromFile(options.measureBundle);
+    // override current value of _type with query from data requirements
+    options._typeFilter = await retrieveTypeFromMeasureBundle(mb);
+  }
+
   const client = new BulkDataClient(options as NormalizedOptions);
   if (options.reporter === 'text') {
     TextReporter(client);
@@ -239,7 +256,7 @@ const runMeasureCalculation = async () => {
 };
 
 const main = async (options: NormalizedOptions) => {
-  validateInputs(program.opts());
+  validateInputs(options);
 
   if (options.privateKey) {
     options.privateKey = await resolveJWK(options.privateKey);
