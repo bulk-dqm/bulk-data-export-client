@@ -19,7 +19,7 @@ import {
   calculateMeasureReports,
   loadBundleFromFile,
   loadPatientBundlesFromDir,
-  retrieveTypeFromMeasureBundle,
+  retrieveParamsFromMeasureBundle,
 } from './fqm';
 import { setLoggingEvents } from './logEvents';
 import moment = require('moment');
@@ -112,7 +112,7 @@ if (options.fhirUrl) {
  * @param opts Record of option values from Commander program
  */
 const validateInputs = (opts: OptionValues) => {
-  if (opts.tokenUrl || opts.clientId || opts.privateKey) {
+  if ((opts.tokenUrl && opts.tokenUrl !== 'none') || opts.clientId || opts.privateKey) {
     const missingInputs: string[] = [];
     if (!opts.tokenUrl) missingInputs.push('Token URL');
     if (!opts.clientId) missingInputs.push('Client ID');
@@ -157,7 +157,7 @@ const executeExport = async () => {
   if (!options.destination) options.destination = `${process.cwd()}/downloads`;
   await checkDestinationExists(options.destination);
 
-  if (options.autoPopulateType) {
+  if (options.autoPopulateType || options.autoPopulateTypeFilter) {
     if (!options.measureBundle) {
       console.log(
         '--auto-populate-type supplied without a measure bundle. Measure bundle path must be supplied with the -m/--measure-bundle flag in order to automatically populate the _type parameter.'
@@ -165,20 +165,16 @@ const executeExport = async () => {
       program.help();
     }
     const mb = await loadBundleFromFile(options.measureBundle);
-    // override current value of _type with query from data requirements
-    options._type = await retrieveTypeFromMeasureBundle(mb);
-  }
+    const autoType = options.autoPopulateType ?? false;
+    const autoTypeFilter = options.autoPopulateTypeFilter ?? false;
 
-  if (options.autoPopulateTypeFilter) {
-    if (!options.measureBundle) {
-      console.log(
-        '--auto-populate-typeFilter supplied without a measure bundle. Measure bundle path must be supplied with the -m/--measure-bundle flag in order to automatically populate the _typeFilter parameter.'
-      );
-      program.help();
+    const results = await retrieveParamsFromMeasureBundle(mb, autoType, autoTypeFilter);
+    if (autoType) {
+      options._type = results._type;
     }
-    const mb = await loadBundleFromFile(options.measureBundle);
-    // override current value of _type with query from data requirements
-    options._typeFilter = await retrieveTypeFromMeasureBundle(mb);
+    if (autoTypeFilter) {
+      options._typeFilter = results._typeFilter;
+    }
   }
 
   const client = new BulkDataClient(options as NormalizedOptions);

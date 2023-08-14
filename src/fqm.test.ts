@@ -2,8 +2,8 @@ import {
   calculateMeasureReports,
   loadBundleFromFile,
   CalculatorTypes,
-  constructTypeQueryFromRequirements,
-  retrieveTypeFromMeasureBundle,
+  constructParamsFromRequirements,
+  retrieveParamsFromMeasureBundle,
 } from './fqm';
 import { Calculator } from 'fqm-execution';
 
@@ -80,7 +80,7 @@ describe('calculateMeasureReports', () => {
   });
 });
 
-describe('retrieveTypeFromMeasureBundle', () => {
+describe('retrieveParamsFromMeasureBundle', () => {
   test('throws error for empty data requirements', async () => {
     const measureBundle = await loadBundleFromFile('src/__fixtures__/proportion-boolean-bundle.json');
     const drSpy = jest.spyOn(Calculator, 'calculateDataRequirements').mockImplementation(async () => {
@@ -96,7 +96,7 @@ describe('retrieveTypeFromMeasureBundle', () => {
     });
 
     try {
-      await retrieveTypeFromMeasureBundle(measureBundle);
+      await retrieveParamsFromMeasureBundle(measureBundle, true, true);
     } catch (e) {
       if (e instanceof Error)
         expect(e.message).toEqual('Data requirements array is not defined for the Library. Aborting $export request.');
@@ -105,32 +105,53 @@ describe('retrieveTypeFromMeasureBundle', () => {
   });
 });
 
-describe('constructTypeQueryFromRequirements', () => {
+describe('constructParamsFromRequirements', () => {
+  const MULTIPLE_DR: fhir4.DataRequirement[] = [
+    {
+      type: 'Procedure',
+      codeFilter: [
+        {
+          path: 'type',
+          valueSet: 'TEST_VALUE_SET',
+        },
+      ],
+    },
+    {
+      type: 'Encounter',
+      codeFilter: [
+        {
+          path: 'code',
+          valueSet: 'TEST_VALUE_SET',
+        },
+      ],
+    },
+  ];
+  const AUTO_TYPE_TRUE = true;
+  const AUTO_TYPE_FALSE = false;
+  const AUTO_TYPEFILTER_TRUE = true;
+  const AUTO_TYPEFILTER_FALSE = false;
   test('generates _type query for a single resource type', () => {
-    expect(constructTypeQueryFromRequirements([{ type: 'Patient' }])).toEqual('Patient');
+    expect(constructParamsFromRequirements([{ type: 'Patient' }], AUTO_TYPE_TRUE, AUTO_TYPEFILTER_FALSE)).toEqual({
+      _type: 'Patient',
+    });
   });
 
   test('generates _type query for multiple resource types', () => {
-    const MULTIPLE_DR: fhir4.DataRequirement[] = [
-      {
-        type: 'Procedure',
-        codeFilter: [
-          {
-            path: 'type',
-            valueSet: 'TEST_VALUE_SET',
-          },
-        ],
-      },
-      {
-        type: 'Encounter',
-        codeFilter: [
-          {
-            path: 'code',
-            valueSet: 'TEST_VALUE_SET',
-          },
-        ],
-      },
-    ];
-    expect(constructTypeQueryFromRequirements(MULTIPLE_DR)).toEqual('Procedure,Encounter');
+    expect(constructParamsFromRequirements(MULTIPLE_DR, AUTO_TYPE_TRUE, AUTO_TYPEFILTER_FALSE)).toEqual({
+      _type: 'Procedure,Encounter',
+    });
+  });
+
+  test('generates _typeFilter query for multiple resource types', () => {
+    expect(constructParamsFromRequirements(MULTIPLE_DR, AUTO_TYPE_FALSE, AUTO_TYPEFILTER_TRUE)).toEqual({
+      _typeFilter: 'Procedure%3Ftype%3Ain=TEST_VALUE_SET,Encounter%3Fcode%3Ain=TEST_VALUE_SET',
+    });
+  });
+
+  test('generates _type and _typeFilter for multiple resource types', () => {
+    expect(constructParamsFromRequirements(MULTIPLE_DR, AUTO_TYPE_TRUE, AUTO_TYPEFILTER_TRUE)).toEqual({
+      _type: 'Procedure,Encounter',
+      _typeFilter: 'Procedure%3Ftype%3Ain=TEST_VALUE_SET,Encounter%3Fcode%3Ain=TEST_VALUE_SET',
+    });
   });
 });
