@@ -171,6 +171,9 @@ const executeExport = async () => {
     const results = await retrieveParamsFromMeasureBundle(mb, autoType, autoTypeFilter);
     if (autoType) {
       options._type = results._type;
+      if (options.patientBundles || options.measureBundle) {
+        options._type = options._type?.concat(',Patient');
+      }
     }
     if (autoTypeFilter) {
       options._typeFilter = results._typeFilter;
@@ -260,6 +263,9 @@ const main = async (options: NormalizedOptions) => {
 
   // execute "Step 1": bulk data export
   if (options.fhirUrl && options.group) {
+    if (options.patientBundles || options.measureBundle) {
+      options._type = options._type?.concat(',Patient');
+    }
     await executeExport();
     // execute "Step 2": generate patient bundles
     if (options.patientBundles || options.measureBundle) {
