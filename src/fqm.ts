@@ -82,10 +82,7 @@ export const constructParamsFromRequirements = (
     if (dr.type) {
       types.push(dr.type);
       const query: { type: string; params: Record<string, string> } = { type: dr.type, params: {} };
-      if (dr?.codeFilter?.[0]?.code?.[0].code) {
-        const key = dr?.codeFilter?.[0].path;
-        key && (query.params[key] = dr.codeFilter[0].code[0].code);
-      } else if (dr?.codeFilter?.[0]?.valueSet) {
+      if (dr?.codeFilter?.[0]?.valueSet) {
         const key = `${dr?.codeFilter?.[0].path}:in`;
         key && (query.params[key] = dr.codeFilter[0].valueSet);
       }
@@ -103,7 +100,10 @@ export const constructParamsFromRequirements = (
   const formattedTypeParam = uniqueTypes.join(',');
   const typeFilterQueries = queries.reduce((acc: string[], e) => {
     if (Object.keys(e.params).length > 0) {
-      acc.push(`${e.type}%3F${new URLSearchParams(e.params).toString()}`);
+      const entry = Object.entries(e.params).map(([key, val]) => {
+        return `${key}=${val}`;
+      });
+      acc.push(`${e.type}?${entry.join('&')}`);
     }
     return acc;
   }, []);
