@@ -144,14 +144,14 @@ describe('constructParamsFromRequirements', () => {
 
   test('generates _typeFilter query for multiple resource types', () => {
     expect(constructParamsFromRequirements(MULTIPLE_DR, AUTO_TYPE_FALSE, AUTO_TYPEFILTER_TRUE)).toEqual({
-      _typeFilter: 'Procedure%3Ftype%3Ain=TEST_VALUE_SET,Encounter%3Fcode%3Ain=TEST_VALUE_SET',
+      _typeFilter: 'Procedure?type:in=TEST_VALUE_SET,Encounter?code:in=TEST_VALUE_SET',
     });
   });
 
   test('generates _type and _typeFilter for multiple resource types', () => {
     expect(constructParamsFromRequirements(MULTIPLE_DR, AUTO_TYPE_TRUE, AUTO_TYPEFILTER_TRUE)).toEqual({
       _type: 'Procedure,Encounter',
-      _typeFilter: 'Procedure%3Ftype%3Ain=TEST_VALUE_SET,Encounter%3Fcode%3Ain=TEST_VALUE_SET',
+      _typeFilter: 'Procedure?type:in=TEST_VALUE_SET,Encounter?code:in=TEST_VALUE_SET',
     });
   });
 });
