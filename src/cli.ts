@@ -24,6 +24,8 @@ import {
 import { setLoggingEvents } from './logEvents';
 
 interface NormalizedOptions extends Omit<Types.NormalizedOptions, 'privateKey'> {
+  from: string;
+  to: string;
   logFile: string;
   outputPath: string;
   measureBundle: string;
@@ -76,6 +78,8 @@ program
     'Automatically populates _type using data requirements from the measure bundle. Requires a measure bundle path to be supplied. Overrides any input provided by the --_type flag.'
   )
   .option('--config <path>', 'Relative path to a config file. Otherwise uses default options.')
+  .option('--from <string>', 'Measurement period start date')
+  .option('--to <string>', 'Measurement period end date')
   .parseAsync(process.argv);
 
 // use default options for parameters not set by the CLI
@@ -93,7 +97,6 @@ if (config) {
 }
 // assign parameter values set by the CLI
 Object.assign(options, params);
-
 // add required trailing slash to FHIR URL if not present
 if (options.fhirUrl) {
   options.fhirUrl = options.fhirUrl.replace(/\/*$/, '/');
@@ -210,8 +213,8 @@ const createPatientBundles = (patientBundleDir: string) => {
  */
 const runMeasureCalculation = async () => {
   const calculationOptions: CalculatorTypes.CalculationOptions = {
-    measurementPeriodStart: '2019-01-01',
-    measurementPeriodEnd: '2019-12-31',
+    measurementPeriodStart: options.from === undefined? '1000-01-01' : options.from,
+    measurementPeriodEnd: options.to === undefined? '9999-12-31' : options.to,
     reportType: 'summary',
   };
   const measureBundle = await loadBundleFromFile(options.measureBundle);
@@ -232,7 +235,6 @@ const main = async (options: NormalizedOptions) => {
 
   // execute "Step 1": bulk data export
   if (options.fhirUrl && options.group) {
-    await executeExport();
     // execute "Step 2": generate patient bundles
     if (options.patientBundles || options.measureBundle) {
       createPatientBundles(options.patientBundles ?? 'patientBundles');
