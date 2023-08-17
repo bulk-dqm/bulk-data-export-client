@@ -213,8 +213,8 @@ const createPatientBundles = (patientBundleDir: string) => {
  */
 const runMeasureCalculation = async () => {
   const calculationOptions: CalculatorTypes.CalculationOptions = {
-    measurementPeriodStart: options.from === undefined? '1000-01-01' : options.from,
-    measurementPeriodEnd: options.to === undefined? '9999-12-31' : options.to,
+    measurementPeriodStart: options.from === undefined ? '1000-01-01' : options.from,
+    measurementPeriodEnd: options.to === undefined ? '9999-12-31' : options.to,
     reportType: 'summary',
   };
   const measureBundle = await loadBundleFromFile(options.measureBundle);
