@@ -214,7 +214,9 @@ const createPatientBundles = (patientBundleDir: string) => {
  */
 const runMeasureCalculation = async () => {
   if (options.from !== undefined && !moment(options.from).isValid())
-    console.log('Date format of --from param : ' + options.from + ' is not valid at ' + moment(options.from).invalidAt());
+    console.log(
+      'Date format of --from param : ' + options.from + ' is not valid at ' + moment(options.from).invalidAt()
+    );
   if (options.to !== undefined && !moment(options.to).isValid())
     console.log('Date format of --to param : ' + options.to + ' is not valid at ' + moment(options.to).invalidAt());
 
