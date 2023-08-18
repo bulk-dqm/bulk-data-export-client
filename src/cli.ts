@@ -22,6 +22,7 @@ import {
   retrieveTypeFromMeasureBundle,
 } from './fqm';
 import { setLoggingEvents } from './logEvents';
+import moment = require('moment');
 
 interface NormalizedOptions extends Omit<Types.NormalizedOptions, 'privateKey'> {
   from: string;
@@ -212,7 +213,6 @@ const createPatientBundles = (patientBundleDir: string) => {
  * Measure Reports to file.
  */
 const runMeasureCalculation = async () => {
-  const moment = require('moment');
   if (options.from !== undefined && !moment(options.from).isValid())
     console.log('Date format of --from param : ' + options.from + ' is not valid at ' + moment(options.from).invalidAt());
   if (options.to !== undefined && !moment(options.to).isValid())
