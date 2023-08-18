@@ -212,6 +212,12 @@ const createPatientBundles = (patientBundleDir: string) => {
  * Measure Reports to file.
  */
 const runMeasureCalculation = async () => {
+  const moment = require('moment');
+  if (options.from !== undefined && !moment(options.from).isValid())
+    console.log('Date format of --from param : ' + options.from + ' is not valid at ' + moment(options.from).invalidAt());
+  if (options.to !== undefined && !moment(options.to).isValid())
+    console.log('Date format of --to param : ' + options.to + ' is not valid at ' + moment(options.to).invalidAt());
+
   const calculationOptions: CalculatorTypes.CalculationOptions = {
     measurementPeriodStart: options.from === undefined ? '1000-01-01' : options.from,
     measurementPeriodEnd: options.to === undefined ? '9999-12-31' : options.to,
