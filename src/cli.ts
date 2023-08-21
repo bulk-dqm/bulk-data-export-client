@@ -34,7 +34,6 @@ interface NormalizedOptions extends Omit<Types.NormalizedOptions, 'privateKey'> 
   privateKey: any;
   autoPopulateType: boolean;
 }
-
 const program = new Command();
 
 // specify options for bulk data request and retrieval
@@ -214,7 +213,7 @@ const createPatientBundles = (patientBundleDir: string) => {
  */
 const runMeasureCalculation = async () => {
   if (options.from !== undefined && !moment(options.from).isValid())
-   throw new Error(
+    throw new Error(
       'Date format of --from param : ' + options.from + ' is not valid at ' + moment(options.from).invalidAt()
     );
   if (options.to !== undefined && !moment(options.to).isValid())
