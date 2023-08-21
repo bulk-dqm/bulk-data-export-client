@@ -1,12 +1,5 @@
 {
-  "exclude": [
-    "build",
-    "node_modules",
-    "src/**/*.test.ts",
-    "src/**/*.test.js",
-    "scripts",
-    "config"
-  ],
+  "exclude": ["build", "node_modules", "src/**/*.test.ts", "src/**/*.test.js", "scripts", "config"],
   "include": ["src", "src/measures/*.json"],
   "compilerOptions": {
     "resolveJsonModule": true,
