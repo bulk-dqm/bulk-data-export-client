@@ -84,7 +84,7 @@ module.exports = {
    * The value of the `_type` parameter for Bulk Data kick-off requests.
    * Will be ignored if empty or falsy.
    */
-  _type: '',
+  _type: null,
 
   /**
    * The value of the `_elements` parameter for Bulk Data kick-off requests.

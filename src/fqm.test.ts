@@ -126,6 +126,62 @@ describe('constructParamsFromRequirements', () => {
       ],
     },
   ];
+
+  const DR_WITH_MULTIPLE_CODEFILTERS: fhir4.DataRequirement[] = [
+    {
+      type: 'Encounter',
+      codeFilter: [
+        {
+          path: 'status',
+          code: [
+            {
+              code: 'finished',
+              system: 'http://hl7.org/fhir/encounter-status',
+            },
+          ],
+        },
+        {
+          path: 'code',
+          valueSet: 'TEST_VALUE_SET',
+        },
+      ],
+    },
+  ];
+
+  const DR_WITH_DIRECT_REFERENCE_CODE: fhir4.DataRequirement[] = [
+    {
+      type: 'Observation',
+      codeFilter: [
+        {
+          path: 'code',
+          code: [
+            {
+              system: 'http://loinc.org',
+              display: 'Functional Assessment of Chronic Illness Therapy - Palliative Care Questionnaire (FACIT-Pal)',
+              code: '71007-9',
+            },
+          ],
+        },
+        {
+          path: 'status',
+          code: [
+            {
+              code: 'final',
+              system: 'http://hl7.org/fhir/observation-status',
+            },
+            {
+              code: 'amended',
+              system: 'http://hl7.org/fhir/observation-status',
+            },
+            {
+              code: 'corrected',
+              system: 'http://hl7.org/fhir/observation-status',
+            },
+          ],
+        },
+      ],
+    },
+  ];
   const AUTO_TYPE_TRUE = true;
   const AUTO_TYPE_FALSE = false;
   const AUTO_TYPEFILTER_TRUE = true;
@@ -152,6 +208,22 @@ describe('constructParamsFromRequirements', () => {
     expect(constructParamsFromRequirements(MULTIPLE_DR, AUTO_TYPE_TRUE, AUTO_TYPEFILTER_TRUE)).toEqual({
       _type: 'Procedure,Encounter',
       _typeFilter: 'Procedure?type:in=TEST_VALUE_SET,Encounter?code:in=TEST_VALUE_SET',
+    });
+  });
+
+  test('generates _typeFilter when multiple codeFilters are present on a data requirement', () => {
+    expect(
+      constructParamsFromRequirements(DR_WITH_MULTIPLE_CODEFILTERS, AUTO_TYPE_FALSE, AUTO_TYPEFILTER_TRUE)
+    ).toEqual({
+      _typeFilter: 'Encounter?code:in=TEST_VALUE_SET',
+    });
+  });
+
+  test('generates _typeFilter for direct reference code', () => {
+    expect(
+      constructParamsFromRequirements(DR_WITH_DIRECT_REFERENCE_CODE, AUTO_TYPE_FALSE, AUTO_TYPEFILTER_TRUE)
+    ).toEqual({
+      _typeFilter: 'Observation?code=71007-9',
     });
   });
 });

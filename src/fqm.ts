@@ -82,6 +82,16 @@ export const constructParamsFromRequirements = (
     if (dr.type) {
       types.push(dr.type);
       const query: { type: string; params: Record<string, string> } = { type: dr.type, params: {} };
+
+      dr?.codeFilter?.forEach((codeFilter) => {
+        if (codeFilter.valueSet) {
+          const key = `${codeFilter.path}:in`;
+          key && (query.params[key] = codeFilter.valueSet);
+        } else if (codeFilter.path === 'code' && codeFilter.code?.[0].code) {
+          const key = codeFilter.path;
+          key && (query.params[key] = codeFilter.code[0].code);
+        }
+      });
       if (dr?.codeFilter?.[0]?.valueSet) {
         const key = `${dr?.codeFilter?.[0].path}:in`;
         key && (query.params[key] = dr.codeFilter[0].valueSet);
