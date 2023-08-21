@@ -263,8 +263,9 @@ const main = async (options: NormalizedOptions) => {
 
   // execute "Step 1": bulk data export
   if (options.fhirUrl && options.group) {
-    if (options.patientBundles || options.measureBundle) {
-      options._type = options._type?.concat(',Patient');
+    if ((options.patientBundles || options.measureBundle) && options._type && options._type.length > 0) {
+      // ensure that Patient resources are exported to use for measure calculation
+      options._type = options._type.concat(',Patient');
     }
     await executeExport();
     // execute "Step 2": generate patient bundles
