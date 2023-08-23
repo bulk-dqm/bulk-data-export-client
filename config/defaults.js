@@ -33,6 +33,13 @@ module.exports = {
   tokenUrl: 'none',
 
   /**
+   * In some instances, basic authication is used to acquire authentication tokens. This is not
+   * needed for open servers
+   */
+  basicAuthUserName: '',
+  basicAuthPassword: '',
+
+  /**
    * The private key used to sign authentication tokens. This is not
    * needed for open servers
    */

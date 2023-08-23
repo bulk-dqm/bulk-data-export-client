@@ -56,7 +56,7 @@
   },
   "dependencies": {
     "@projecttacoma/node-fhir-server-core": "^2.2.8",
-    "bulk-data-client": "git+https://git@github.com/smart-on-fhir/bulk-data-client",
+    "bulk-data-client": "git+https://git@github.com/bulk-dqm/bulk-data-client#basic_auth",
     "colors": "^1.4.0",
     "commander": "^9.4.1",
     "docsify": "^4.13.0",

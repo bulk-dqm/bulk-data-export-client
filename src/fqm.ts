@@ -19,7 +19,7 @@ export const loadBundleFromFile = async (filename: string): Promise<fhir4.Bundle
  */
 export const loadPatientBundlesFromDir = async (path: string) => {
   const patientJSONs = await readdir(path);
-  const patientBundles = patientJSONs.map(async (file) => {
+  const patientBundles = patientJSONs.filter(a => a.includes('.json')).map(async (file) => {
     return loadBundleFromFile(`${path}/${file}`) as Promise<fhir4.Bundle>;
   });
   return Promise.all(patientBundles);
