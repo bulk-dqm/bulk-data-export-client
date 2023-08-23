@@ -189,6 +189,8 @@ The supported options for making a request to a FHIR server are as follows:
 -s, --_since <date> Only include resources modified after the specified date. The parameter can be provided as a partial date.
 -q, --_typeFilter <string> Experimental _typeFilter parameter. Represents a string of comma delimited FHIR REST queries.
 -a, --auto-populate-type <boolean> Automatically populates _type using data requirements from the measure bundle. Requires a measure bundle path to be supplied. Overrides any input provided by the --_type flag.
+--from <string> Measurement period start date time. Should be formatted with a string of FHIR dateTime. 
+--to <string> Measurement period end date time. Should be formatted with a string of FHIR dateTime. 
 --config <path> Relative path to a config file. Otherwise uses default options.
 ```
 
