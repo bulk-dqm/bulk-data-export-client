@@ -22,8 +22,11 @@ import {
   retrieveTypeFromMeasureBundle,
 } from './fqm';
 import { setLoggingEvents } from './logEvents';
+import moment = require('moment');
 
 interface NormalizedOptions extends Omit<Types.NormalizedOptions, 'privateKey'> {
+  from: string;
+  to: string;
   logFile: string;
   outputPath: string;
   measureBundle: string;
@@ -31,7 +34,6 @@ interface NormalizedOptions extends Omit<Types.NormalizedOptions, 'privateKey'> 
   privateKey: any;
   autoPopulateType: boolean;
 }
-
 const program = new Command();
 
 // specify options for bulk data request and retrieval
@@ -76,6 +78,8 @@ program
     'Automatically populates _type using data requirements from the measure bundle. Requires a measure bundle path to be supplied. Overrides any input provided by the --_type flag.'
   )
   .option('--config <path>', 'Relative path to a config file. Otherwise uses default options.')
+  .option('--from <string>', 'Measurement period start date')
+  .option('--to <string>', 'Measurement period end date')
   .parseAsync(process.argv);
 
 // use default options for parameters not set by the CLI
@@ -93,7 +97,6 @@ if (config) {
 }
 // assign parameter values set by the CLI
 Object.assign(options, params);
-
 // add required trailing slash to FHIR URL if not present
 if (options.fhirUrl) {
   options.fhirUrl = options.fhirUrl.replace(/\/*$/, '/');
@@ -209,10 +212,17 @@ const createPatientBundles = (patientBundleDir: string) => {
  * Measure Reports to file.
  */
 const runMeasureCalculation = async () => {
+  if (options.from !== undefined && !moment(options.from).isValid())
+    throw new Error(
+      'Date format of --from param : ' + options.from + ' is not valid at ' + moment(options.from).invalidAt()
+    );
+  if (options.to !== undefined && !moment(options.to).isValid())
+    throw new Error('Date format of --to param : ' + options.to + ' is not valid at ' + moment(options.to).invalidAt());
+
   const calculationOptions: CalculatorTypes.CalculationOptions = {
-    measurementPeriodStart: '2019-01-01',
-    measurementPeriodEnd: '2019-12-31',
     reportType: 'summary',
+    ...(options.from && { measurementPeriodStart: options.from }),
+    ...(options.to && { measurementPeriodEnd: options.to }),
   };
   const measureBundle = await loadBundleFromFile(options.measureBundle);
   const patientBundles = await loadPatientBundlesFromDir(options.patientBundles ?? 'patientBundles');
