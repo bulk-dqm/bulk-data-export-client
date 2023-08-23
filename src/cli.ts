@@ -242,6 +242,7 @@ const main = async (options: NormalizedOptions) => {
 
   // execute "Step 1": bulk data export
   if (options.fhirUrl && options.group) {
+    await executeExport();
     // execute "Step 2": generate patient bundles
     if (options.patientBundles || options.measureBundle) {
       createPatientBundles(options.patientBundles ?? 'patientBundles');
