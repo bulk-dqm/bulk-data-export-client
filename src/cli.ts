@@ -12,7 +12,7 @@ import TextReporter from 'bulk-data-client/built/reporters/text';
 import { resolveJWK } from './jwk';
 import * as Logger from 'bulk-data-client/built/loggers/index';
 import { createExportReport } from './reportGenerator';
-import { assemblePatientBundle, getNDJSONFromDir } from './ndjsonToBundle';
+import { assemblePatientBundle, findPatientFiles, getNDJSONFromDir } from './ndjsonToBundle';
 import { writeFile } from 'fs';
 import { CalculatorTypes } from 'fqm-execution';
 import {
@@ -188,7 +188,12 @@ const executeExport = async () => {
  */
 const createPatientBundles = (patientBundleDir: string) => {
   const bundleDirectory = resolve(patientBundleDir);
-  const parsedNDJSON = getNDJSONFromDir(options.destination, 'Patient');
+  const patientFiles = findPatientFiles(resolve(options.destination));
+  const parsedNDJSON = patientFiles.reduce((acc: fhir4.FhirResource[], patientFile: string) => {
+    const ndjson = getNDJSONFromDir(options.destination, patientFile);
+    acc.push(...ndjson);
+    return acc;
+  }, []);
   if (!fs.existsSync(bundleDirectory)) {
     fs.mkdirSync(bundleDirectory, { recursive: true });
   }

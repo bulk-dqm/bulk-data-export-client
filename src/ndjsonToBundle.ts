@@ -4,27 +4,40 @@ import { CollectionBundle } from './types/collectionBundle';
 import * as patientRefs from './compartment-definition/patient-attribute-paths.json';
 
 /**
- * Retrieves NDJSON content for a specified resource type from a given directory.
+ * Retrieves NDJSON content for a given file from a given directory.
  * @param dir directory containing downloaded NDJSON
- * @param resourceType resource type to retrieve NDJSON for
+ * @param file file name containing the resources to convert to NDJSON
  */
-export const getNDJSONFromDir = (dir: string, resourceType: string): fhir4.FhirResource[] => {
-  // ndjson file can take on <resourceType>.ndjson or 1.<resourceType>.ndjson format
-  if (
-    fs.existsSync(path.join(dir, `${resourceType}.ndjson`)) ||
-    fs.existsSync(path.join(dir, `1.${resourceType}.ndjson`))
-  ) {
-    let ndjsonFile;
-    if (fs.existsSync(path.join(dir, `${resourceType}.ndjson`))) {
-      ndjsonFile = path.join(dir, `${resourceType}.ndjson`);
-    } else ndjsonFile = path.join(dir, `1.${resourceType}.ndjson`);
-    const ndjson = fs.readFileSync(ndjsonFile, 'utf8').split('\n');
+export const getNDJSONFromDir = (dir: string, file: string): fhir4.FhirResource[] => {
+  if (fs.existsSync(path.join(dir, file))) {
+    const ndjson = fs.readFileSync(path.join(dir, file), 'utf8').split('\n');
     const parsedNDJSON = ndjson.map((resource) => {
       return JSON.parse(resource) as fhir4.FhirResource;
     });
     return parsedNDJSON;
   }
   return [];
+};
+
+/**
+ * Loops over all files in a given directory to infer which files contain Patient resources
+ * @param dir directory containing downloaded NDJSON
+ * @returns array of file names for files containing Patient resources
+ */
+export const findPatientFiles = (dir: string): string[] => {
+  const files = fs.readdirSync(dir).filter((f) => f !== 'log.ndjson' && f.slice(-7) === '.ndjson');
+  const patientFiles = [];
+  for (const file of files) {
+    const fileContent = fs.readFileSync(path.join(dir, file), 'utf-8').split('\n');
+    const firstResource = JSON.parse(fileContent[0]) as fhir4.FhirResource;
+    if (firstResource.resourceType === 'Patient') {
+      patientFiles.push(file);
+    }
+  }
+  if (patientFiles.length === 0) {
+    throw new Error('No files containing patient data were found in the directory.');
+  }
+  return patientFiles;
 };
 
 /**
@@ -55,8 +68,9 @@ export const assemblePatientBundle = (patientResource: fhir4.Patient, dir: strin
   const files = fs.readdirSync(dir).filter((f) => f !== 'log.ndjson' && f.slice(-7) === '.ndjson');
   files.forEach((file) => {
     // get resource type from the file name (assumes <resourceType>.ndjson or 1.<resourceType>.ndjson format)
-    const resourceType = file[0] === '1' ? file.slice(2, -7) : file.slice(0, -7);
-    const resources = getNDJSONFromDir(dir, resourceType);
+    const resources = getNDJSONFromDir(dir, file);
+    // infer the resource type from the first resource extracted from the file
+    const resourceType = resources[0].resourceType;
     // get all resources from the file that reference the patient
     const filteredResources = (resources as any[]).filter((res) => {
       // check whether resource references patient with valid reference key, which

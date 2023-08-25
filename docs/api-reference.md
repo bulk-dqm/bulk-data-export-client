@@ -113,13 +113,21 @@ Sets logging events for logging responses and status updates throughout the expo
 Converts downloaded NDJSON content to FHIR Bundles for each patient in the requested FHIR Group.
 
 ### getNDJSONFromDir
-Retrieves NDJSON content for a specified resource type from a given directory.
+Retrieves NDJSON content for a given file from a given directory.
 
 | Param         | Type     | Description                                                               |
 | ------------- | -------- | ------------------------------------------------------------------------- |
 | dir | `String` | Path to directory containing downloaded NDJSON. |
-| resourceType | `String` | Resource type to retrieve NDJSON for
-| **Returns**   | `fhir4.FhirResource[]`  | Returns array of parsed NDJSON, cast to FHIR Resources       
+| file | `String` | file name containing the resources to convert to NDJSON
+| **Returns**   | `fhir4.FhirResource[]`  | Returns array of parsed NDJSON, cast to FHIR Resources
+
+### findPatientFiles
+Loops over all files in a given directory to infer which files contain Patient resources.
+
+| Param         | Type     | Description                                                               |
+| ------------- | -------- | ------------------------------------------------------------------------- |
+| dir | `String` | Path to directory containing downloaded NDJSON. |
+| **Returns**   | `string[]`  | Array of file names for files containing Patient resources
 
 ### mapResourcesToCollectionBundle
 Creates FHIR Collection [Bundle](https://www.hl7.org/fhir/bundle.html) from given FHIR resources.

@@ -1,6 +1,11 @@
 import fs from 'fs';
 import * as path from 'path';
-import { getNDJSONFromDir, mapResourcesToCollectionBundle, assemblePatientBundle } from './ndjsonToBundle';
+import {
+  getNDJSONFromDir,
+  mapResourcesToCollectionBundle,
+  assemblePatientBundle,
+  findPatientFiles,
+} from './ndjsonToBundle';
 
 const PATIENT_NDJSON = fs.readFileSync(path.join(__dirname, '__fixtures__', 'testPatient.ndjson'), 'utf8');
 const ENCOUNTER_NDJSON = fs.readFileSync(path.join(__dirname, '__fixtures__', 'testEncounter.ndjson'), 'utf8');
@@ -27,14 +32,33 @@ describe('getNDJSONFromDir', () => {
   });
 
   test('retrieves and parses NDJSON for Patient resource type', () => {
-    expect(getNDJSONFromDir('testDir', 'Patient')).toEqual([JSON.parse(PATIENT_NDJSON)]);
+    expect(getNDJSONFromDir('testDir', 'Patient.ndjson')).toEqual([JSON.parse(PATIENT_NDJSON)]);
   });
 
   test('Returns empty array if directory does not contain file for resource type', () => {
-    expect(getNDJSONFromDir('testDir', 'Non-Resource-Type')).toEqual([]);
+    expect(getNDJSONFromDir('testDir', 'invalid-file.ndjson')).toEqual([]);
   });
 
   afterAll(cleanUpTestDir);
+});
+
+describe('findPatientFiles', () => {
+  test('throws error if no Patient files can be found', () => {
+    fs.mkdirSync('./testDir');
+    try {
+      findPatientFiles('./testDir');
+    } catch (e) {
+      if (e instanceof Error)
+        expect(e.message).toEqual('No files containing patient data were found in the directory.');
+    }
+  });
+
+  test('returns array of file names containing Patient resources', async () => {
+    await setUpTestDir();
+    const fileNames = findPatientFiles('./testDir');
+    expect(fileNames).toEqual(['Patient.ndjson']);
+  });
+  afterEach(cleanUpTestDir);
 });
 
 describe('mapResourcesToCollectionBundle', () => {
