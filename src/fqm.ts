@@ -92,10 +92,6 @@ export const constructParamsFromRequirements = (
           key && (query.params[key] = codeFilter.code[0].code);
         }
       });
-      if (dr?.codeFilter?.[0]?.valueSet) {
-        const key = `${dr?.codeFilter?.[0].path}:in`;
-        key && (query.params[key] = dr.codeFilter[0].valueSet);
-      }
       queries.push(query);
     }
   });
