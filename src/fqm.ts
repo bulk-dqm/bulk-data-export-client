@@ -82,7 +82,7 @@ export const constructParamsFromRequirements = (
     if (dr.type) {
       types.push(dr.type);
       const query: { type: string; params: Record<string, string> } = { type: dr.type, params: {} };
-
+      // gather subqueries from code filters on the data requirement
       dr?.codeFilter?.forEach((codeFilter) => {
         if (codeFilter.valueSet) {
           const key = `${codeFilter.path}:in`;
@@ -92,6 +92,66 @@ export const constructParamsFromRequirements = (
           key && (query.params[key] = codeFilter.code[0].code);
         }
       });
+      // gather subqueries from date filters on the data requirement
+      dr?.dateFilter?.forEach((dateFilter) => {
+        if (dateFilter.path) {
+          const key = dateFilter.path;
+          // value that should be filtered on
+          let parameterValue;
+          if (dateFilter.valueDateTime) {
+            // If a dateTime is specified, the filter will return only those data items
+            // that are equal to the specified dateTime
+            parameterValue = `eq${dateFilter.valueDateTime}`;
+          } else if (dateFilter.valuePeriod) {
+            // If a period is specified, the filter will return only those data items that
+            // fall within the bounds determined by the Period (inclusive of boundaries)
+            const { start, end } = dateFilter.valuePeriod;
+            if (start && end) {
+              if (new Date(start) > new Date(end)) {
+                throw new Error('Date filter start value SHALL have a lower or equal value than end.');
+              }
+              parameterValue = `ge${start}&${key}=le${end}`;
+            } else if (start) {
+              parameterValue = `ge${start}`;
+            } else if (end) {
+              parameterValue = `le${end}`;
+            }
+          } else if (dateFilter.valueDuration) {
+            // If a Duration is specified, the filter will return only those data items
+            // that fall within Duration before now
+            // Duration intentionally carries the semantics of a length of time
+            const { value, system, code, comparator } = dateFilter.valueDuration;
+            // default to equality prefix (to be used when comparator is not defined)
+            let prefix = 'eq';
+            if (comparator) {
+              switch (comparator) {
+                case '>':
+                  prefix = 'gt';
+                  break;
+                case '>=':
+                  prefix = 'ge';
+                  break;
+                case '<':
+                  prefix = 'lt';
+                  break;
+                case '<=':
+                  prefix = 'le';
+                  break;
+              }
+            }
+            if (value && system && code) {
+              parameterValue = `${prefix}${value}|${system}|${code}`;
+            } else if (value && code) {
+              parameterValue = `${prefix}${value}||${code}`;
+            } else if (value) {
+              parameterValue = `${prefix}${value}`;
+            }
+          }
+
+          key && parameterValue && (query.params[key] = parameterValue);
+        }
+      });
+
       queries.push(query);
     }
   });
