@@ -2,8 +2,8 @@ import {
   calculateMeasureReports,
   loadBundleFromFile,
   CalculatorTypes,
-  constructTypeQueryFromRequirements,
-  retrieveTypeFromMeasureBundle,
+  constructParamsFromRequirements,
+  retrieveParamsFromMeasureBundle,
 } from './fqm';
 import { Calculator } from 'fqm-execution';
 
@@ -80,7 +80,7 @@ describe('calculateMeasureReports', () => {
   });
 });
 
-describe('retrieveTypeFromMeasureBundle', () => {
+describe('retrieveParamsFromMeasureBundle', () => {
   test('throws error for empty data requirements', async () => {
     const measureBundle = await loadBundleFromFile('src/__fixtures__/proportion-boolean-bundle.json');
     const drSpy = jest.spyOn(Calculator, 'calculateDataRequirements').mockImplementation(async () => {
@@ -96,7 +96,7 @@ describe('retrieveTypeFromMeasureBundle', () => {
     });
 
     try {
-      await retrieveTypeFromMeasureBundle(measureBundle);
+      await retrieveParamsFromMeasureBundle(measureBundle, true, true);
     } catch (e) {
       if (e instanceof Error)
         expect(e.message).toEqual('Data requirements array is not defined for the Library. Aborting $export request.');
@@ -105,32 +105,303 @@ describe('retrieveTypeFromMeasureBundle', () => {
   });
 });
 
-describe('constructTypeQueryFromRequirements', () => {
+describe('constructParamsFromRequirements', () => {
+  const MULTIPLE_DR: fhir4.DataRequirement[] = [
+    {
+      type: 'Procedure',
+      codeFilter: [
+        {
+          path: 'type',
+          valueSet: 'TEST_VALUE_SET',
+        },
+      ],
+    },
+    {
+      type: 'Encounter',
+      codeFilter: [
+        {
+          path: 'code',
+          valueSet: 'TEST_VALUE_SET',
+        },
+      ],
+    },
+  ];
+
+  const DR_WITH_MULTIPLE_CODEFILTERS: fhir4.DataRequirement[] = [
+    {
+      type: 'Encounter',
+      codeFilter: [
+        {
+          path: 'status',
+          code: [
+            {
+              code: 'finished',
+              system: 'http://hl7.org/fhir/encounter-status',
+            },
+          ],
+        },
+        {
+          path: 'code',
+          valueSet: 'TEST_VALUE_SET',
+        },
+      ],
+    },
+  ];
+
+  const DR_WITH_DIRECT_REFERENCE_CODE: fhir4.DataRequirement[] = [
+    {
+      type: 'Observation',
+      codeFilter: [
+        {
+          path: 'code',
+          code: [
+            {
+              system: 'http://loinc.org',
+              display: 'Functional Assessment of Chronic Illness Therapy - Palliative Care Questionnaire (FACIT-Pal)',
+              code: '71007-9',
+            },
+          ],
+        },
+        {
+          path: 'status',
+          code: [
+            {
+              code: 'final',
+              system: 'http://hl7.org/fhir/observation-status',
+            },
+            {
+              code: 'amended',
+              system: 'http://hl7.org/fhir/observation-status',
+            },
+            {
+              code: 'corrected',
+              system: 'http://hl7.org/fhir/observation-status',
+            },
+          ],
+        },
+      ],
+    },
+  ];
+  const AUTO_TYPE_TRUE = true;
+  const AUTO_TYPE_FALSE = false;
+  const AUTO_TYPEFILTER_TRUE = true;
+  const AUTO_TYPEFILTER_FALSE = false;
   test('generates _type query for a single resource type', () => {
-    expect(constructTypeQueryFromRequirements([{ type: 'Patient' }])).toEqual('Patient');
+    expect(constructParamsFromRequirements([{ type: 'Patient' }], AUTO_TYPE_TRUE, AUTO_TYPEFILTER_FALSE)).toEqual({
+      _type: 'Patient',
+    });
   });
 
   test('generates _type query for multiple resource types', () => {
-    const MULTIPLE_DR: fhir4.DataRequirement[] = [
+    expect(constructParamsFromRequirements(MULTIPLE_DR, AUTO_TYPE_TRUE, AUTO_TYPEFILTER_FALSE)).toEqual({
+      _type: 'Procedure,Encounter',
+    });
+  });
+
+  test('generates _typeFilter query for multiple resource types', () => {
+    expect(constructParamsFromRequirements(MULTIPLE_DR, AUTO_TYPE_FALSE, AUTO_TYPEFILTER_TRUE)).toEqual({
+      _typeFilter: 'Procedure?type:in=TEST_VALUE_SET,Encounter?code:in=TEST_VALUE_SET',
+    });
+  });
+
+  test('generates _type and _typeFilter for multiple resource types', () => {
+    expect(constructParamsFromRequirements(MULTIPLE_DR, AUTO_TYPE_TRUE, AUTO_TYPEFILTER_TRUE)).toEqual({
+      _type: 'Procedure,Encounter',
+      _typeFilter: 'Procedure?type:in=TEST_VALUE_SET,Encounter?code:in=TEST_VALUE_SET',
+    });
+  });
+
+  test('generates _typeFilter when multiple codeFilters are present on a data requirement', () => {
+    expect(
+      constructParamsFromRequirements(DR_WITH_MULTIPLE_CODEFILTERS, AUTO_TYPE_FALSE, AUTO_TYPEFILTER_TRUE)
+    ).toEqual({
+      _typeFilter: 'Encounter?code:in=TEST_VALUE_SET',
+    });
+  });
+
+  test('generates _typeFilter for direct reference code', () => {
+    expect(
+      constructParamsFromRequirements(DR_WITH_DIRECT_REFERENCE_CODE, AUTO_TYPE_FALSE, AUTO_TYPEFILTER_TRUE)
+    ).toEqual({
+      _typeFilter: 'Observation?code=71007-9',
+    });
+  });
+
+  test('generates _typeFilter for date filter with valueDateTime', () => {
+    const DR_WITH_VALUE_DATETIME: fhir4.DataRequirement[] = [
       {
-        type: 'Procedure',
-        codeFilter: [
+        type: 'Observation',
+        dateFilter: [
           {
-            path: 'type',
-            valueSet: 'TEST_VALUE_SET',
-          },
-        ],
-      },
-      {
-        type: 'Encounter',
-        codeFilter: [
-          {
-            path: 'code',
-            valueSet: 'TEST_VALUE_SET',
+            path: 'testPath',
+            valueDateTime: '2022-01-01T00:00:00.000Z',
           },
         ],
       },
     ];
-    expect(constructTypeQueryFromRequirements(MULTIPLE_DR)).toEqual('Procedure,Encounter');
+    expect(constructParamsFromRequirements(DR_WITH_VALUE_DATETIME, AUTO_TYPE_FALSE, AUTO_TYPEFILTER_TRUE)).toEqual({
+      _typeFilter: 'Observation?testPath=eq2022-01-01T00:00:00.000Z',
+    });
+  });
+
+  test('generates _typeFilter for date filter with valuePeriod (no end)', () => {
+    const DR_WITH_VALUE_PERIOD: fhir4.DataRequirement[] = [
+      {
+        type: 'Observation',
+        dateFilter: [
+          {
+            path: 'testPath',
+            valuePeriod: {
+              start: '2022-01-01T00:00:00.000Z',
+            },
+          },
+        ],
+      },
+    ];
+    expect(constructParamsFromRequirements(DR_WITH_VALUE_PERIOD, AUTO_TYPE_FALSE, AUTO_TYPEFILTER_TRUE)).toEqual({
+      _typeFilter: 'Observation?testPath=ge2022-01-01T00:00:00.000Z',
+    });
+  });
+
+  test('generates _typeFilter for date filter with valuePeriod (no start)', () => {
+    const DR_WITH_VALUE_PERIOD: fhir4.DataRequirement[] = [
+      {
+        type: 'Observation',
+        dateFilter: [
+          {
+            path: 'testPath',
+            valuePeriod: {
+              end: '2022-01-01T00:00:00.000Z',
+            },
+          },
+        ],
+      },
+    ];
+    expect(constructParamsFromRequirements(DR_WITH_VALUE_PERIOD, AUTO_TYPE_FALSE, AUTO_TYPEFILTER_TRUE)).toEqual({
+      _typeFilter: 'Observation?testPath=le2022-01-01T00:00:00.000Z',
+    });
+  });
+
+  test('generates _typeFilter for date filter with valuePeriod (start and end)', () => {
+    const DR_WITH_VALUE_PERIOD: fhir4.DataRequirement[] = [
+      {
+        type: 'Observation',
+        dateFilter: [
+          {
+            path: 'testPath',
+            valuePeriod: {
+              start: '2022-01-01T00:00:00.000Z',
+              end: '2022-12-31T00:00:00.000Z',
+            },
+          },
+        ],
+      },
+    ];
+    expect(constructParamsFromRequirements(DR_WITH_VALUE_PERIOD, AUTO_TYPE_FALSE, AUTO_TYPEFILTER_TRUE)).toEqual({
+      _typeFilter: 'Observation?testPath=ge2022-01-01T00:00:00.000Z&testPath=le2022-12-31T00:00:00.000Z',
+    });
+  });
+
+  test('generates _typeFilter for date filter with valuePeriod (invalid start and end)', () => {
+    const DR_WITH_VALUE_PERIOD: fhir4.DataRequirement[] = [
+      {
+        type: 'Observation',
+        dateFilter: [
+          {
+            path: 'testPath',
+            valuePeriod: {
+              start: '2022-12-31T00:00:00.000Z',
+              end: '2022-01-01T00:00:00.000Z',
+            },
+          },
+        ],
+      },
+    ];
+    try {
+      constructParamsFromRequirements(DR_WITH_VALUE_PERIOD, AUTO_TYPE_FALSE, AUTO_TYPEFILTER_TRUE);
+    } catch (e) {
+      if (e instanceof Error)
+        expect(e.message).toEqual('Date filter start value SHALL have a lower or equal value than end.');
+    }
+  });
+
+  test('generates _typeFilter for date filter for valueDuration with comparator defined', () => {
+    const DR_WITH_VALUE_DURATION: fhir4.DataRequirement[] = [
+      {
+        type: 'Observation',
+        dateFilter: [
+          {
+            path: 'testPath',
+            valueDuration: {
+              comparator: '>',
+              value: 10,
+            },
+          },
+        ],
+      },
+    ];
+    expect(constructParamsFromRequirements(DR_WITH_VALUE_DURATION, AUTO_TYPE_FALSE, AUTO_TYPEFILTER_TRUE)).toEqual({
+      _typeFilter: 'Observation?testPath=gt10',
+    });
+  });
+
+  test('generates _typeFilter for date filter with valueDuration without comparator defined', () => {
+    const DR_WITH_VALUE_DURATION: fhir4.DataRequirement[] = [
+      {
+        type: 'Observation',
+        dateFilter: [
+          {
+            path: 'testPath',
+            valueDuration: {
+              value: 10,
+            },
+          },
+        ],
+      },
+    ];
+    expect(constructParamsFromRequirements(DR_WITH_VALUE_DURATION, AUTO_TYPE_FALSE, AUTO_TYPEFILTER_TRUE)).toEqual({
+      _typeFilter: 'Observation?testPath=eq10',
+    });
+  });
+
+  test('generates _typeFilter for date filter with valueDuration with value, system, and code', () => {
+    const DR_WITH_VALUE_DURATION: fhir4.DataRequirement[] = [
+      {
+        type: 'Observation',
+        dateFilter: [
+          {
+            path: 'testPath',
+            valueDuration: {
+              value: 10,
+              system: 'testSystem',
+              code: 'testCode',
+            },
+          },
+        ],
+      },
+    ];
+    expect(constructParamsFromRequirements(DR_WITH_VALUE_DURATION, AUTO_TYPE_FALSE, AUTO_TYPEFILTER_TRUE)).toEqual({
+      _typeFilter: 'Observation?testPath=eq10|testSystem|testCode',
+    });
+  });
+
+  test('generates _typeFilter for date filter with valueDuration with value and code', () => {
+    const DR_WITH_VALUE_DURATION: fhir4.DataRequirement[] = [
+      {
+        type: 'Observation',
+        dateFilter: [
+          {
+            path: 'testPath',
+            valueDuration: {
+              value: 10,
+              code: 'testCode',
+            },
+          },
+        ],
+      },
+    ];
+    expect(constructParamsFromRequirements(DR_WITH_VALUE_DURATION, AUTO_TYPE_FALSE, AUTO_TYPEFILTER_TRUE)).toEqual({
+      _typeFilter: 'Observation?testPath=eq10||testCode',
+    });
   });
 });

@@ -19,7 +19,7 @@ import {
   calculateMeasureReports,
   loadBundleFromFile,
   loadPatientBundlesFromDir,
-  retrieveTypeFromMeasureBundle,
+  retrieveParamsFromMeasureBundle,
 } from './fqm';
 import { setLoggingEvents } from './logEvents';
 import moment = require('moment');
@@ -33,6 +33,7 @@ interface NormalizedOptions extends Omit<Types.NormalizedOptions, 'privateKey'> 
   patientBundles: string;
   privateKey: any;
   autoPopulateType: boolean;
+  autoPopulateTypeFilter: boolean;
 }
 const program = new Command();
 
@@ -74,8 +75,12 @@ program
     'Experimental _typeFilter parameter. Represents a string of comma delimited FHIR REST queries.'
   )
   .option(
-    '-a, --auto-populate-type',
+    '--auto-populate-type',
     'Automatically populates _type using data requirements from the measure bundle. Requires a measure bundle path to be supplied. Overrides any input provided by the --_type flag.'
+  )
+  .option(
+    '--auto-populate-typeFilter',
+    'Automatically populates _typeFilter using data requirements from the measure bundle. Requires a measure bundle path to be supplied. Overrides any input provided by the --_typeFilter flag.'
   )
   .option('--config <path>', 'Relative path to a config file. Otherwise uses default options.')
   .option('--from <string>', 'Measurement period start date')
@@ -107,7 +112,7 @@ if (options.fhirUrl) {
  * @param opts Record of option values from Commander program
  */
 const validateInputs = (opts: OptionValues) => {
-  if (opts.tokenUrl || opts.clientId || opts.privateKey) {
+  if ((opts.tokenUrl && opts.tokenUrl !== 'none') || opts.clientId || opts.privateKey) {
     const missingInputs: string[] = [];
     if (!opts.tokenUrl) missingInputs.push('Token URL');
     if (!opts.clientId) missingInputs.push('Client ID');
@@ -152,7 +157,7 @@ const executeExport = async () => {
   if (!options.destination) options.destination = `${process.cwd()}/downloads`;
   await checkDestinationExists(options.destination);
 
-  if (options.autoPopulateType) {
+  if (options.autoPopulateType || options.autoPopulateTypeFilter) {
     if (!options.measureBundle) {
       console.log(
         '--auto-populate-type supplied without a measure bundle. Measure bundle path must be supplied with the -m/--measure-bundle flag in order to automatically populate the _type parameter.'
@@ -160,8 +165,19 @@ const executeExport = async () => {
       program.help();
     }
     const mb = await loadBundleFromFile(options.measureBundle);
-    // override current value of _type with query from data requirements
-    options._type = await retrieveTypeFromMeasureBundle(mb);
+    const autoType = options.autoPopulateType ?? false;
+    const autoTypeFilter = options.autoPopulateTypeFilter ?? false;
+
+    const results = await retrieveParamsFromMeasureBundle(mb, autoType, autoTypeFilter);
+    if (autoType) {
+      options._type = results._type;
+      if (options.patientBundles || options.measureBundle) {
+        options._type = options._type?.concat(',Patient');
+      }
+    }
+    if (autoTypeFilter) {
+      options._typeFilter = results._typeFilter;
+    }
   }
 
   const client = new BulkDataClient(options as NormalizedOptions);
@@ -239,7 +255,7 @@ const runMeasureCalculation = async () => {
 };
 
 const main = async (options: NormalizedOptions) => {
-  validateInputs(program.opts());
+  validateInputs(options);
 
   if (options.privateKey) {
     options.privateKey = await resolveJWK(options.privateKey);
@@ -247,6 +263,10 @@ const main = async (options: NormalizedOptions) => {
 
   // execute "Step 1": bulk data export
   if (options.fhirUrl && options.group) {
+    if ((options.patientBundles || options.measureBundle) && options._type && options._type.length > 0) {
+      // ensure that Patient resources are exported to use for measure calculation
+      options._type = options._type.concat(',Patient');
+    }
     await executeExport();
     // execute "Step 2": generate patient bundles
     if (options.patientBundles || options.measureBundle) {

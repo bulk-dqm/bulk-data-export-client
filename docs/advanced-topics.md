@@ -12,12 +12,16 @@ The client uses the [FHIR Patient Compartment Definition](http://hl7.org/fhir/R4
 3. For each patient, constructs a FHIR Collection Bundle containing the FHIR Patient resource and all downloaded resources that reference the patient.
 4. Writes the collection bundles to the `patientBundles` directory or the user-specified patient bundles directory.
 
-## Automatic `--_type` Population
-Optionally, the client can automatically populate the `_type` parameter using the data requirements of a provided FHIR Measure.
+## Automatic `_type` and `_typeFilter` Population
+Optionally, the client can automatically populate the `_type` and/or `_typeFilter` parameters using the data requirements of a provided FHIR Measure.
 
 To automatically populate the `_type` parameter prior to sending a Bulk Data Export kick-off request, the `--auto-populate-type` CLI flag must be specified, and a measure bundle path must also be specified. When present, the data requirements output will override any input provided by the `--_type` flag.
 
-The client retrieves the data requirements for the given measure using the [fqm-execution](https://github.com/projecttacoma/fqm-execution) `calculateDataRequirements` API function, and then extracts the `type`s from each data requirement that gets returned from the API function.
+To automatically populate the `_typeFilter` parameter prior to sending a Bulk Data Export kick-off request, the `--auto-populate-typeFilter` CLI flag must be specified, and a measure bundle path must also be specified. When present, the data requirements output will override any input provided by the `--_typeFilter` flag.
+
+The client retrieves the data requirements for the given measure using the [fqm-execution](https://github.com/projecttacoma/fqm-execution) `calculateDataRequirements` API function, and then extracts the `type`s from each data requirement that gets returned from the API function to populate the `_type` parameter. The client extracts the `codeFilter`s from each data requirement to populate the `_typeFilter` parameter.
+
+The `--auto-populate-type` and `--auto-populate-typeFilter` options can be used independently.
 
 ## Measure Report Generation
 When a path to a measure bundle is specified, the application runs measure calculation against all the patients that are members of the FHIR Group used for Group Export. The client uses the [fqm-execution](https://github.com/projecttacoma/fqm-execution) `calculateMeasureReports` API function to generate a FHIR MeasureReport of type `summary` that contains a measure score across all the patients.
