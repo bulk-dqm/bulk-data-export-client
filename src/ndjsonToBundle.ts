@@ -83,6 +83,5 @@ export const assemblePatientBundle = (patientResource: fhir4.Patient, dir: strin
     bundleResources.push(...filteredResources);
   });
   bundleResources.push(patientResource);
-  console.log(bundleResources.length);
   return mapResourcesToCollectionBundle(bundleResources);
 };
