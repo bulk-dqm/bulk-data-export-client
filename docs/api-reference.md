@@ -71,23 +71,27 @@ Generates a summary FHIR Measure Report using the [fqm-execution](https://github
 | options | `CalculatorTypes.CalculationOptions` | fqm-execution calculation options |
 | **Returns**   | `Promise<CalculatorTypes.MRCalculationOutput>`  | MeasureReport resource summary according to standard https://www.hl7.org/fhir/measurereport.html
 
-### retrieveTypeFromMeasureBundle
-Populates the _type parameter used in a bulk data export request. Retrieves the data requirements for the given measure bundle using the fqm-execution API function. Extracts the resource types from the data requirements. Throws error if data requirements are not defined on the results of the API function.
+### retrieveParamsFromMeasureBundle
+Populates the _type/_typeFilter parameters used in a bulk data export request. Retrieves the data requirements for the given measure bundle using the fqm-execution API function to use for _type and _typeFilter query construction. Throws error if data requirements are not defined on the results of the API function.
 
 | Param         | Type     | Description                                                               |
 | ------------- | -------- | ------------------------------------------------------------------------- |
 | measureBundle | `fhir4.Bundle` | FHIR Measure Bundle |
+| autoType | `boolean` | boolean specifying whether we want to auto-generate _type |
+| autoTypeFilter | `boolean` | boolean specifying whether we want to auto-generate _typeFilter |
 | options | `CalculatorTypes.CalculationOptions` | fqm-execution calculation options |
-| **Returns**   | `Promise<string>`  | Comma-delimited string of resource types
+| **Returns**   | `Promise<{_type: string, _typeFilter: string}>`  | Object containing the populated _type and _typeFilter values
 
-### constructTypeQueryFromRequirements
-Constructs the _type parameter used in a bulk data export request by parsing the
+### constructParamsFromRequirements
+Constructs the _type and _typeFilter parameters used in a bulk data export request by parsing the
 data requirements for the measure bundle.
 
 | Param         | Type     | Description                                                               |
 | ------------- | -------- | ------------------------------------------------------------------------- |
 | dataRequirements | `fhir4.DataRequirement[]` | Data requirements retrieved from FHIR Measure Bundle |
-| **Returns**   | `Promise<string>`  | Comma-delimited string of resource types
+| autoType | `boolean` | boolean specifying whether we want to auto-generate _type |
+| autoTypeFilter | `boolean` | boolean specifying whether we want to auto-generate _typeFilter |
+| **Returns**   | `Promise<{_type: string, _typeFilter: string}>`  | Object containing the populated _type and _typeFilter values
 
 ## JSON Web Key (JWK)
 
