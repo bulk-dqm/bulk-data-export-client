@@ -19,9 +19,9 @@ To automatically populate the `_type` parameter prior to sending a Bulk Data Exp
 
 To automatically populate the `_typeFilter` parameter prior to sending a Bulk Data Export kick-off request, the `--auto-populate-typeFilter` CLI flag must be specified, and a measure bundle path must also be specified. When present, the data requirements output will override any input provided by the `--_typeFilter` flag.
 
-The client retrieves the data requirements for the given measure using the [fqm-execution](https://github.com/projecttacoma/fqm-execution) `calculateDataRequirements` API function, and then extracts the `type`s from each data requirement that gets returned from the API function to populate the `_type` parameter. The client extracts the `codeFilter`s from each data requirement to populate the `_typeFilter` parameter.
+The client retrieves the data requirements for the given measure using the [fqm-execution](https://github.com/projecttacoma/fqm-execution) `calculateDataRequirements` API function, and then extracts the `type`s from each data requirement that gets returned from the API function to populate the `_type` parameter. The client extracts the `codeFilter`s and `dateFilter`s from each data requirement to populate the `_typeFilter` parameter with the corresponding queries.
 
-The `--auto-populate-type` and `--auto-populate-typeFilter` options can be used independently.
+The `--auto-populate-type` and `--auto-populate-typeFilter` options can specified independently by the client. Note that specifying only one of these options may result in a server-side error if the server requires that `_type` be supplied alongside `_typeFilter`. The server may throw an error if it does not support the `:in` operator for `_typeFilter` queries.
 
 ## Measure Report Generation
 When a path to a measure bundle is specified, the application runs measure calculation against all the patients that are members of the FHIR Group used for Group Export. The client uses the [fqm-execution](https://github.com/projecttacoma/fqm-execution) `calculateMeasureReports` API function to generate a FHIR MeasureReport of type `summary` that contains a measure score across all the patients.

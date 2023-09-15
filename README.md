@@ -119,7 +119,7 @@ Note: Bulk data requests are *not* incremental. The API collects all requested d
 
 ## Configuration
 
-Configuration options can be set using a configuration file and/or specifying option values via the CLI. When running the client, the configuration options are read as folllows:
+Configuration options can be set using a configuration file and/or specifying option values via the CLI. When running the client, the configuration options are read as follows:
 1. Each configuration option takes on a default value, set by the default configuration file `config/defaults.js`.
 2. If a custom configuration file is specified via the `--config` CLI flag, all configuration options specified in the file will overwrite the default values.
 3. Any CLI parameters that are specified will overwrite the configuration option values set either by the default file or the custom configuration file. Therefore, CLI flags take precedent over all other methods.
@@ -156,7 +156,7 @@ The configuration options are as follows:
 | ndjsonValidateFHIRResourceType | boolean | If `true`, verifies that every single JSON object extracted for the NDJSON file has a `resourceType` property, and that this property equals the expected `type` reported in the export manifest. |
 | addDestinationToManifest | boolean | Specifies whether to add a `destination` property to each file containing the path (relative to the manifest file) to the saved file. |
 | forceStandardFileNames | boolean | Specifies whether to rename files to match the standard naming convention `{fileNumber}.{ResourceType}.ndjson`.
-| downloadAttachments | boolean | Specifies whethr to download external attachments found in `DocumentReference` resources. |
+| downloadAttachments | boolean | Specifies whether to download external attachments found in `DocumentReference` resources. |
 | inlineDocRefAttachmentsSmallerThan | number | In `DocumentReference` resources, any `attachment` elements having a `url` (instead of inline data) and a `size` below this number will be downloaded and put inline as base64 `data`. |
 | inlineDocRefAttachmentTypes | string[] | Only files of listed types will be inlined and the rest will be downloaded into "attachment" subfolder. |
 | pdfToText | boolean | Specifies whether attachments of type PDF that are being inlined will first be converted to text and then inlined as base64. |
@@ -255,7 +255,7 @@ The `-d` and `-b` flags may also be provided to specify storage directories. If 
 ## Dependent Open-Source Libraries
 
 ### FHIR Quality Measure (FQM) Execution
-`fqm-execution` is a library for calculating eCQMs witten in CQL using the HL7® FHIR® standard. The library is used to generate a FHIR summary [MeasureReport](https://www.hl7.org/fhir/measurereport.html) on the patients referenced in the FHIR Group used for export.
+`fqm-execution` is a library for calculating eCQMs written in CQL using the HL7® FHIR® standard. The library is used to generate a FHIR summary [MeasureReport](https://www.hl7.org/fhir/measurereport.html) on the patients referenced in the FHIR Group used for export.
 
 `fqm-execution` is available on [npm](https://www.npmjs.com/package/fqm-execution) and [GitHub](https://github.com/projecttacoma/fqm-execution).
 

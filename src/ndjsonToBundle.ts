@@ -72,10 +72,10 @@ export const assemblePatientBundle = (patientResource: fhir4.Patient, dir: strin
     // infer the resource type from the first resource extracted from the file
     const resourceType = resources[0].resourceType;
     // get all resources from the file that reference the patient
-    const filteredResources = (resources as any[]).filter((res) => {
+    const filteredResources = (resources as any[])?.filter((res) => {
       // check whether resource references patient with valid reference key, which
       // requires checking all possible reference keys
-      const definedReference = (patientRefs as any)[resourceType].filter((refKey: string) => {
+      const definedReference = (patientRefs as any)[resourceType]?.filter((refKey: string) => {
         return res[refKey] && res[refKey].reference;
       });
       return res[definedReference?.[0]]?.reference === `Patient/${patientId}`;
